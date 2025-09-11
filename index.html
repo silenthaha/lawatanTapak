@@ -141,6 +141,23 @@
         border: 1px dashed var(--border);
         border-radius: 12px;
       }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+      .table th,
+      .table td {
+        border: 1px solid var(--border);
+        padding: 10px;
+        vertical-align: top;
+      }
+      .table th {
+        background: #0f1a31;
+        position: sticky;
+        top: 0;
+      }
       .tmuted {
         color: var(--muted);
       }
@@ -285,23 +302,24 @@
       <!-- SECTION 3 (list) -->
       <div class="card" id="section3">
         <!-- <h2>Section 3 — Senarai Item</h2> -->
-        <table class="table" id="entriesTable">
-          <thead>
-            <tr>
-              <th style="width: 28%">Gambar</th>
-              <th>Lokasi</th>
-              <th>Ulasan</th>
-              <th style="width: 70px">Tindakan</th>
-            </tr>
-          </thead>
-          <tbody id="entriesBody">
-            <tr>
-              <td class="tmuted" colspan="4">Tiada data.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
+        <div id="entriesWrap"></div>
+            <table class="table" id="entriesTable">
+            <thead>
+                <tr>
+                <th style="width: 28%">Gambar</th>
+                <th>Lokasi</th>
+                <th>Ulasan</th>
+                <th style="width: 70px">Tindakan</th>
+                </tr>
+            </thead>
+            <tbody id="entriesBody">
+                <tr>
+                <td class="tmuted" colspan="4">Tiada data.</td>
+                </tr>
+            </tbody>
+            </table>
+        </div>
+    </div>
       <!-- SECTION 4 (only Simpan & Hantar) -->
       <div class="card sticky-footer" id="section4">
         <!-- <h2>Section 4 — Simpan & Hantar</h2> -->
@@ -701,7 +719,7 @@
           @page{size:A4;margin:14mm}
         </style></head><body>`;
         const headerBlock = `
-          <h1>LAPORAN • LAWATAN • TAPAK</h1>
+          <h1>LAPORAN</h1>
           <div class="sub">Dijana: ${new Date().toLocaleString()}</div>
           <table>
             <tr><th style="width:40%">Maklumat Asas</th><th>Butiran</th></tr>
