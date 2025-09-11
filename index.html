@@ -209,16 +209,16 @@
   <body>
     <div class="wrap">
       <h1>📋 Laporan Lawatan Tapak</h1>
-      <div class="subtitle">
+      <!-- <div class="subtitle">
         Mobile-first. Data kekal sehingga anda tekan <b>Simpan & Hantar</b>.
-      </div>
+      </div> -->
 
       <!-- SECTION 1 -->
       <div class="card" id="section1">
-        <h2>Section 1 — Maklumat Asas</h2>
+        <h2>Maklumat Asas</h2>
         <div class="row cols-2">
           <div>
-            <label>Nama Projek *</label>
+            <label>Nama Projekz:</label>
             <input
               id="namaProjek"
               placeholder="cth: Naik Taraf IP PBX Bangunan A"
@@ -226,7 +226,7 @@
             />
           </div>
           <div>
-            <label>Perkara *</label>
+            <label>Perkara:</label>
             <input
               id="perkara"
               placeholder="cth: Lawatan tapak, pemeriksaan kabel"
@@ -234,15 +234,15 @@
             />
           </div>
           <div>
-            <label>Tarikh *</label>
+            <label>Tarikh:</label>
             <input id="tarikh" type="date" required />
           </div>
           <div>
-            <label>Nama Bangunan</label>
+            <label>Nama Bangunan:</label>
             <input id="namaBangunan" placeholder="cth: Blok Pentadbiran" />
           </div>
           <div>
-            <label>Email *</label>
+            <label>Email: </label>
             <input
               id="email"
               type="email"
@@ -251,21 +251,19 @@
             />
           </div>
         </div>
-        <p class="note">
-          Medan bertanda * adalah wajib. Auto-simpan lokal sehingga dihantar.
-        </p>
+        <p class="note">Sila isi semua maklumat asas</p>
       </div>
 
       <!-- SECTION 2 -->
       <div class="card" id="section2">
-        <h2>Section 2 — Lokasi, Gambar & Ulasan</h2>
+        <h2>Lokasi, Gambar & Ulasan</h2>
         <div class="row">
           <div>
-            <label>Medan 1: Nama bilik / lokasi</label>
+            <label>Nama bilik / lokasi:</label>
             <input id="lokasi" placeholder="cth: Bilik PABX Aras 3" />
           </div>
           <div>
-            <label>Medan 2: Tangkap gambar (akan disimpan di telefon)</label>
+            <label>Tangkap gambar (akan disimpan di telefon):</label>
             <input
               id="gambarInput"
               type="file"
@@ -284,7 +282,7 @@
             </div>
           </div>
           <div>
-            <label>Medan 3: Ulasan</label>
+            <label>Ulasan:</label>
             <textarea
               id="ulasan"
               placeholder="cth: Tray fiber rapi, perlukan tagging semula patch cord."
@@ -304,7 +302,7 @@
 
       <!-- SECTION 3 -->
       <div class="card" id="section3">
-        <h2>Section 3 — Senarai (Responsive Table)</h2>
+        <h2>Senarai Item Direkod</h2>
         <div id="entriesWrap">
           <table class="table" id="entriesTable">
             <thead>
@@ -326,10 +324,10 @@
 
       <!-- SECTION 4 -->
       <div class="card sticky-footer" id="section4">
-        <h2>Section 4 — Simpan & Hantar</h2>
+        <h2>Simpan & Hantar</h2>
         <div class="btnbar">
-          <button id="btnPDF" class="primary">Simpan PDF</button>
-          <button id="btnShare" class="pill">Hantar (WhatsApp / Email)</button>
+          <!-- <button id="btnPDF" class="primary">Simpan PDF</button>
+          <button id="btnShare" class="pill">Hantar (WhatsApp / Email)</button> -->
           <button id="btnSubmit" class="danger">
             Simpan & Hantar (Akhiri)
           </button>
@@ -774,14 +772,47 @@
 
         const head = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Tapak (Cetak)</title>
     <style>
-      body{font-family:Inter,Arial,sans-serif; margin:28pt}
-      h1{font-size:18pt; margin:0 0 6pt; text-align:center}
-      .sub{font-size:10pt; color:#333; text-align:center; margin:0 0 16pt}
-      .row{margin:0 0 6pt}
-      .label{font-weight:700}
-      .img{width:100%; margin:8pt 0 14pt; page-break-inside:avoid;}
-      hr{border:0;border-top:1px solid #ccc;margin:8pt 0}
-      @page{size:A4;margin:20mm}
+      body{
+      font-family:Inter,Arial,sans-serif; 
+      margin:28pt
+      }
+
+      h1{
+      font-size:18pt; 
+      margin:0 0 6pt; 
+      text-align:center
+      }
+
+      .sub{
+      font-size:10pt; 
+      color:#333; 
+      text-align:center; 
+      margin:0 0 16pt
+      }
+
+      .row{
+      margin:0 0 6pt
+      }
+
+      .label{
+      font-weight:700
+      }
+
+      .img{
+      width:100%; 
+      margin:8pt 0 14pt; 
+      page-break-inside:avoid;
+      }
+
+      hr{
+      border:0;
+      border-top:1px solid #ccc;
+      margin:8pt 0}
+      @page{
+      size:A4;
+      margin:20mm
+      }
+
     </style>
     </head><body>`;
 
