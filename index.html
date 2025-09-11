@@ -10,9 +10,7 @@
   <!-- jsPDF (pilihan). Jika tiada internet/CDN disekat, sistem akan fallback ke Cetak ke PDF (Offline) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
-    :root {
-      --bg:#0b1220; --card:#121a2b; --text:#e7eefc; --muted:#8aa0c6; --accent:#4f8cff; --ok:#17d19b; --warn:#ffcc66; --danger:#ff647c; --border:#1d2942;
-    }
+    :root { --bg:#0b1220; --card:#121a2b; --text:#e7eefc; --muted:#8aa0c6; --accent:#4f8cff; --ok:#17d19b; --warn:#ffcc66; --danger:#ff647c; --border:#1d2942; }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0; font-family:Inter,system-ui,Arial,sans-serif; background:var(--bg); color:var(--text); -webkit-text-size-adjust:100%}
@@ -227,6 +225,7 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:'p', unit:'pt', format:'a4' });
     const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
     const M = 40; // margin
     let y = M;
 
@@ -250,37 +249,36 @@
     doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.text('Maklumat Asas', M, y); y+=12;
     doc.setFont('helvetica','normal'); doc.setFontSize(11);
     info.forEach(row=>{
-      if(y>760){ doc.addPage(); y=M; }
+      if(y>H-40){ doc.addPage(); y=M; }
       doc.text(`${row[0]}: `, M, y);
       doc.text(String(row[1]), M+120, y, {maxWidth: W-M*2-120});
       y+=16;
     });
 
-    y+=6; if(y>780){ doc.addPage(); y=M; }
+    y+=6; if(y>H-20){ doc.addPage(); y=M; }
     doc.setLineWidth(0.5); doc.line(M, y, W-M, y); y+=16;
 
-    // Entries with large images
+    // Section 3 style rendering in PDF (ringkas)
     doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('Butiran Lokasi & Gambar', M, y); y+=14;
     doc.setFont('helvetica','normal'); doc.setFontSize(11);
 
-    if(entries.length===0){ doc.text('(Tiada data)', M, y); }
-    else {
-      for(let i=0;i<entries.length;i++){
-        const it=entries[i];
-        if(y>760){ doc.addPage(); y=M; }
-        doc.setFont('helvetica','bold'); doc.text(`Lokasi:`, M, y); doc.setFont('helvetica','normal'); doc.text(String(it.lokasi||'-'), M+60, y, {maxWidth: W-M*2-60}); y+=16;
-        doc.setFont('helvetica','bold'); doc.text(`Ulasan:`, M, y); doc.setFont('helvetica','normal'); doc.text(String(it.ulasan||'-'), M+60, y, {maxWidth: W-M*2-60}); y+=16;
+    for(let i=0;i<entries.length;i++){
+      const it = entries[i];
+      if(y>H-140){ doc.addPage(); y=M; }
+      doc.setFont('helvetica','bold'); doc.text('Lokasi:', M, y); doc.setFont('helvetica','normal'); doc.text(String(it.lokasi||'-'), M+60, y, {maxWidth: W-M*2-60}); y+=16;
+      doc.setFont('helvetica','bold'); doc.text('Ulasan:', M, y); doc.setFont('helvetica','normal'); doc.text(String(it.ulasan||'-'), M+60, y, {maxWidth: W-M*2-60}); y+=12;
 
-        if(it.img){
-          // Dapatkan ratio
-          const tmp = await new Promise((res)=>{ const im=new Image(); im.onload=()=>res({w:im.naturalWidth||1800,h:im.naturalHeight||1200}); im.src=it.img; });
-          const maxW = W - M*2; const ratio = tmp.h/tmp.w; const drawW = maxW; const drawH = drawW*ratio;
-          if(y+drawH>800){ doc.addPage(); y=M; }
-          doc.addImage(it.img, 'JPEG', M, y, drawW, drawH, undefined, 'FAST'); y += drawH + 18;
-        } else { y += 10; }
-
-        doc.setDrawColor(210); doc.line(M, y, W-M, y); y+=14;
+      if(it.img){
+        const tmp = await new Promise((res)=>{ const im=new Image(); im.onload=()=>res({w:im.naturalWidth||1200,h:im.naturalHeight||800}); im.src=it.img; });
+        const maxW = W - M*2; const ratio = tmp.h/tmp.w; let drawW = maxW; let drawH = drawW*ratio;
+        const space = H - y - 40; // ruang tinggal di halaman
+        if(drawH>space){ // jika tak muat, pindah halaman baru
+          doc.addPage(); y=M; drawW = maxW; drawH = drawW*ratio;
+        }
+        doc.addImage(it.img, 'JPEG', M, y, drawW, drawH, undefined, 'FAST'); y += drawH + 14;
       }
+
+      doc.setDrawColor(210); doc.line(M, y, W-M, y); y+=10;
     }
 
     return doc;
@@ -343,7 +341,7 @@
     showToast('Sesi ditutup. Data dibersihkan.');
   });
 
-  // ===== Cetak ke PDF (Offline, tanpa jsPDF)
+  // ===== Cetak ke PDF (Offline) dengan pagination Section 3
   function openPrintView(){
     const form = JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}');
     const entries = readEntries();
@@ -352,14 +350,16 @@
 
     const head = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Tapak (Cetak)</title>
     <style>
-      body{font-family:Inter,Arial,sans-serif; margin:28pt}
+      body{font-family:Inter,Arial,sans-serif; margin:18mm}
       h1{font-size:18pt; margin:0 0 6pt; text-align:center}
-      .sub{font-size:10pt; color:#333; text-align:center; margin:0 0 16pt}
+      .sub{font-size:10pt; color:#333; text-align:center; margin:0 0 12pt}
       .row{margin:0 0 6pt}
       .label{font-weight:700}
-      .img{width:100%; margin:8pt 0 14pt; page-break-inside:avoid;}
-      hr{border:0;border-top:1px solid #ccc;margin:8pt 0}
-      @page{size:A4;margin:20mm}
+      table{border-collapse:collapse; width:100%; font-size:10pt}
+      th,td{border:1px solid #ccc; padding:6pt; vertical-align:top}
+      td img{max-width:100%; height:auto; max-height:120pt}
+      .page-break{page-break-before:always}
+      @page{size:A4; margin:18mm}
     </style>
     </head><body>`;
 
@@ -369,7 +369,7 @@
       <div class="row"><span class="label">Tarikh:</span> ${esc(form.tarikh)}</div>
       <div class="row"><span class="label">Nama Bangunan:</span> ${esc(form.namaBangunan)}</div>
       <div class="row"><span class="label">Email:</span> ${esc(form.email)}</div>
-      <hr>
+      <hr style="border:0;border-top:1px solid #ccc;margin:10pt 0">
     `;
 
     let body = `${head}<h1>LAPORAN LAWATAN TAPAK</h1><div class="sub">Dijana: ${new Date().toLocaleString()}</div>${info}`;
@@ -377,12 +377,20 @@
     if(entries.length===0){
       body += '<div>(Tiada data)</div>';
     } else {
-      entries.forEach((it)=>{
-        body += `<div class="row"><span class="label">Lokasi:</span> ${esc(it.lokasi||'')}</div>`;
-        body += `<div class="row"><span class="label">Ulasan:</span> ${esc(it.ulasan||'')}</div>`;
-        if(it.img){ body += `<img class="img" src="${it.img}">`; }
-        body += '<hr>';
-      });
+      const rowsPerPage = 4; // pastikan muat satu page A4
+      const pages = Math.ceil(entries.length / rowsPerPage);
+      for(let p=0;p<pages;p++){
+        if(p>0){ body += '<div class="page-break"></div>'; }
+        body += '<table><thead><tr><th style="width:28%">Gambar</th><th>Lokasi</th><th>Ulasan</th></tr></thead><tbody>';
+        entries.slice(p*rowsPerPage,(p+1)*rowsPerPage).forEach((it)=>{
+          body += '<tr>';
+          body += it.img?`<td><img src="${it.img}"></td>`:'<td>(tiada)</td>';
+          body += `<td>${esc(it.lokasi||'')}</td>`;
+          body += `<td>${esc(it.ulasan||'')}</td>`;
+          body += '</tr>';
+        });
+        body += '</tbody></table>';
+      }
     }
 
     body += '</body></html>';
@@ -401,25 +409,22 @@
   // ===== Init
   loadForm();
   refreshTable();
+
   // ===== Elak zoom auto ketika fokus input (iOS) + jaga sticky footer bila keyboard naik
   (function(){
     const vpMeta = document.querySelector('meta[name="viewport"]');
-    // iOS: pastikan tiada zoom melebihi 1 ketika fokus input
     function lockViewport(){ if(vpMeta) vpMeta.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); }
     function unlockViewport(){ if(vpMeta) vpMeta.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); }
     document.addEventListener('focusin', (e)=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){ lockViewport(); } });
     document.addEventListener('focusout', (e)=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){ unlockViewport(); } });
 
-    // Laraskan padding bawah agar butang Section 4 tak dilindungi keyboard (Android/iOS modern)
     const foot = document.getElementById('section4');
     if(window.visualViewport && foot){
       const wrap = document.querySelector('.wrap');
       const adjust = ()=>{
         const vv = window.visualViewport; if(!vv) return;
         const kb = Math.max(0, (window.innerHeight - vv.height));
-        // Beri ruang di bawah kandungan
         wrap.style.paddingBottom = (kb>0? (kb+24): 16) + 'px';
-        // Pastikan footer kelihatan
         foot.style.marginBottom = (kb>0? (kb): 0) + 'px';
       };
       visualViewport.addEventListener('resize', adjust);
