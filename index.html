@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
   <title>Laporan Lawatan Tapak — Mobile</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0; font-family:Inter,system-ui,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    body{margin:0; font-family:Inter,system-ui,Arial,sans-serif; background:var(--bg); color:var(--text); -webkit-text-size-adjust:100%}
     .wrap{max-width:860px; margin-inline:auto; padding:16px}
     h1{font-size:1.35rem; margin:0 0 8px}
     .subtitle{color:var(--muted); font-size:.9rem; margin-bottom:16px}
@@ -23,7 +23,7 @@
     .row{display:grid; grid-template-columns:1fr; gap:12px}
     @media(min-width:560px){.row.cols-2{grid-template-columns:1fr 1fr}}
     label{font-size:.85rem; color:var(--muted); display:block; margin-bottom:6px}
-    input, textarea, select{width:100%; padding:12px 12px; background:#0c1529; color:var(--text); border:1px solid var(--border); border-radius:12px}
+    input, textarea, select{width:100%; padding:12px 12px; background:#0c1529; color:var(--text); border:1px solid var(--border); border-radius:12px; font-size:16px; line-height:1.4}
     input[type=date]{padding:10px 12px}
     textarea{min-height:88px; resize:vertical}
     .btnbar{display:flex; gap:8px; flex-wrap:wrap}
@@ -401,6 +401,32 @@
   // ===== Init
   loadForm();
   refreshTable();
+  // ===== Elak zoom auto ketika fokus input (iOS) + jaga sticky footer bila keyboard naik
+  (function(){
+    const vpMeta = document.querySelector('meta[name="viewport"]');
+    // iOS: pastikan tiada zoom melebihi 1 ketika fokus input
+    function lockViewport(){ if(vpMeta) vpMeta.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); }
+    function unlockViewport(){ if(vpMeta) vpMeta.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); }
+    document.addEventListener('focusin', (e)=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){ lockViewport(); } });
+    document.addEventListener('focusout', (e)=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){ unlockViewport(); } });
+
+    // Laraskan padding bawah agar butang Section 4 tak dilindungi keyboard (Android/iOS modern)
+    const foot = document.getElementById('section4');
+    if(window.visualViewport && foot){
+      const wrap = document.querySelector('.wrap');
+      const adjust = ()=>{
+        const vv = window.visualViewport; if(!vv) return;
+        const kb = Math.max(0, (window.innerHeight - vv.height));
+        // Beri ruang di bawah kandungan
+        wrap.style.paddingBottom = (kb>0? (kb+24): 16) + 'px';
+        // Pastikan footer kelihatan
+        foot.style.marginBottom = (kb>0? (kb): 0) + 'px';
+      };
+      visualViewport.addEventListener('resize', adjust);
+      visualViewport.addEventListener('scroll', adjust);
+      adjust();
+    }
+  })();
 </script>
 </body>
 </html>
