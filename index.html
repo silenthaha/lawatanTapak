@@ -1,744 +1,375 @@
 <!DOCTYPE html>
 <html lang="ms">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Laporan Lawatan Tapak — Mobile</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <!-- jsPDF -->
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-      integrity="sha512-e1N3wC8k0A/7u+V1xQh7U4s7vGvFaw2xqXy3V3g1h8fQw3f8J2b6m9m6m1f8y2zv7F6r2Yw3Gz6d8u2xqXWQmA=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
-    <style>
-      :root {
-        --bg: #0b1220;
-        --card: #121a2b;
-        --text: #e7eefc;
-        --muted: #8aa0c6;
-        --accent: #4f8cff;
-        --ok: #17d19b;
-        --warn: #ffcc66;
-        --danger: #ff647c;
-        --border: #1d2942;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        height: 100%;
-      }
-      body {
-        margin: 0;
-        font-family: Inter, system-ui, Arial, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
-      .wrap {
-        max-width: 860px;
-        margin-inline: auto;
-        padding: 16px;
-      }
-      h1 {
-        font-size: 1.35rem;
-        margin: 0 0 8px;
-      }
-      .subtitle {
-        color: var(--muted);
-        font-size: 0.9rem;
-        margin-bottom: 16px;
-      }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 16px;
-        margin: 12px 0;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-      }
-      .row {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-      @media (min-width: 560px) {
-        .row.cols-2 {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
-      label {
-        font-size: 0.85rem;
-        color: var(--muted);
-        display: block;
-        margin-bottom: 6px;
-      }
-      input,
-      textarea,
-      select {
-        width: 100%;
-        padding: 12px 12px;
-        background: #0c1529;
-        color: var(--text);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-      }
-      input[type="date"] {
-        padding: 10px 12px;
-      }
-      textarea {
-        min-height: 88px;
-        resize: vertical;
-      }
-      .btnbar {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      button,
-      .btn {
-        appearance: none;
-        border: 1px solid var(--border);
-        background: #0f1a31;
-        color: var(--text);
-        padding: 10px 14px;
-        border-radius: 12px;
-        font-weight: 600;
-      }
-      button.primary {
-        background: var(--accent);
-        border-color: transparent;
-        color: white;
-      }
-      button.ghost {
-        background: transparent;
-      }
-      button.warn {
-        background: var(--warn);
-        color: #111;
-      }
-      button.danger {
-        background: var(--danger);
-      }
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.8rem;
-        padding: 6px 10px;
-        background: #0f1a31;
-        border: 1px solid var(--border);
-        border-radius: 999px;
-      }
-      .thumb {
-        display: block;
-        width: 100%;
-        max-height: 220px;
-        object-fit: contain;
-        background: #0c1529;
-        border: 1px dashed var(--border);
-        border-radius: 12px;
-      }
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.92rem;
-      }
-      .table th,
-      .table td {
-        border: 1px solid var(--border);
-        padding: 10px;
-        vertical-align: top;
-      }
-      .table th {
-        background: #0f1a31;
-        position: sticky;
-        top: 0;
-      }
-      .tmuted {
-        color: var(--muted);
-      }
-      .toast {
-        position: fixed;
-        left: 50%;
-        transform: translateX(-50%);
-        bottom: 20px;
-        background: #091021;
-        color: #fff;
-        padding: 10px 14px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        display: none;
-        z-index: 5;
-      }
-      .note {
-        font-size: 0.8rem;
-        color: var(--muted);
-      }
-      .split {
-        display: flex;
-        gap: 8px;
-      }
-      .split > * {
-        flex: 1;
-      }
-      .hr {
-        height: 1px;
-        border: 0;
-        background: var(--border);
-        margin: 12px 0;
-      }
-      .sticky-footer {
-        position: sticky;
-        bottom: 0;
-        padding-top: 8px;
-        background: linear-gradient(
-          180deg,
-          rgba(11, 18, 32, 0) 0%,
-          rgba(11, 18, 32, 0.85) 20%,
-          rgba(11, 18, 32, 1) 60%
-        );
-      }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <h1>📋 Laporan Lawatan Tapak</h1>
-      <div class="subtitle">
-        Mobile-first. Data kekal sehingga anda tekan <b>Simpan & Hantar</b>.
-      </div>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Laporan Lawatan Tapak — Mobile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-e1N3wC8k0A/7u+V1xQh7U4s7vGvFaw2xqXy3V3g1h8fQw3f8J2b6m9m6m1f8y2zv7F6r2Yw3Gz6d8u2xqXWQmA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    :root {
+      --bg:#0b1220; --card:#121a2b; --text:#e7eefc; --muted:#8aa0c6; --accent:#4f8cff; --ok:#17d19b; --warn:#ffcc66; --danger:#ff647c; --border:#1d2942;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,system-ui,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    .wrap{max-width:860px; margin-inline:auto; padding:16px}
+    h1{font-size:1.35rem; margin:0 0 8px}
+    .subtitle{color:var(--muted); font-size:.9rem; margin-bottom:16px}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; margin:12px 0; box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .row{display:grid; grid-template-columns:1fr; gap:12px}
+    @media(min-width:560px){.row.cols-2{grid-template-columns:1fr 1fr}}
+    label{font-size:.85rem; color:var(--muted); display:block; margin-bottom:6px}
+    input, textarea, select{width:100%; padding:12px 12px; background:#0c1529; color:var(--text); border:1px solid var(--border); border-radius:12px}
+    input[type=date]{padding:10px 12px}
+    textarea{min-height:88px; resize:vertical}
+    .btnbar{display:flex; gap:8px; flex-wrap:wrap}
+    button, .btn{appearance:none; border:1px solid var(--border); background:#0f1a31; color:var(--text); padding:10px 14px; border-radius:12px; font-weight:600}
+    button.primary{background:var(--accent); border-color:transparent; color:white}
+    button.ghost{background:transparent}
+    button.warn{background:var(--warn); color:#111}
+    button.danger{background:var(--danger)}
+    .pill{display:inline-flex; align-items:center; gap:8px; font-size:.8rem; padding:6px 10px; background:#0f1a31; border:1px solid var(--border); border-radius:999px}
+    .thumb{display:block; width:100%; max-height:220px; object-fit:contain; background:#0c1529; border:1px dashed var(--border); border-radius:12px}
+    .table{width:100%; border-collapse:collapse; font-size:.92rem}
+    .table th, .table td{border:1px solid var(--border); padding:10px; vertical-align:top}
+    .table th{background:#0f1a31; position:sticky; top:0}
+    .tmuted{color:var(--muted)}
+    .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:20px; background:#091021; color:#fff; padding:10px 14px; border-radius:10px; border:1px solid var(--border); display:none; z-index:5}
+    .note{font-size:.8rem; color:var(--muted)}
+    .split{display:flex; gap:8px}
+    .split > *{flex:1}
+    .hr{height:1px; border:0; background:var(--border); margin:12px 0}
+    .sticky-footer{position:sticky; bottom:0; padding-top:8px; background:linear-gradient(180deg, rgba(11,18,32,0) 0%, rgba(11,18,32,0.85) 20%, rgba(11,18,32,1) 60%)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>📋 Laporan Lawatan Tapak</h1>
+    <div class="subtitle">Mobile-first. Data kekal sehingga anda tekan <b>Simpan & Hantar</b>.</div>
 
-      <!-- SECTION 1 -->
-      <div class="card" id="section1">
-        <h2>Section 1 — Maklumat Asas</h2>
-        <div class="row cols-2">
-          <div>
-            <label>Nama Projek *</label>
-            <input
-              id="namaProjek"
-              placeholder="cth: Naik Taraf IP PBX Bangunan A"
-              required
-            />
-          </div>
-          <div>
-            <label>Perkara *</label>
-            <input
-              id="perkara"
-              placeholder="cth: Lawatan tapak, pemeriksaan kabel"
-              required
-            />
-          </div>
-          <div>
-            <label>Tarikh *</label>
-            <input id="tarikh" type="date" required />
-          </div>
-          <div>
-            <label>Nama Bangunan</label>
-            <input id="namaBangunan" placeholder="cth: Blok Pentadbiran" />
-          </div>
-          <div>
-            <label>Email *</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="cth: nama@agensi.gov.my"
-              required
-            />
-          </div>
+    <!-- SECTION 1 -->
+    <div class="card" id="section1">
+      <h2>Section 1 — Maklumat Asas</h2>
+      <div class="row cols-2">
+        <div>
+          <label>Nama Projek *</label>
+          <input id="namaProjek" placeholder="cth: Naik Taraf IP PBX Bangunan A" required>
         </div>
-        <p class="note">
-          Medan bertanda * adalah wajib. Auto-simpan lokal sehingga dihantar.
-        </p>
-      </div>
-
-      <!-- SECTION 2 -->
-      <div class="card" id="section2">
-        <h2>Section 2 — Lokasi, Gambar & Ulasan</h2>
-        <div class="row">
-          <div>
-            <label>Medan 1: Nama bilik / lokasi</label>
-            <input id="lokasi" placeholder="cth: Bilik PABX Aras 3" />
-          </div>
-          <div>
-            <label>Medan 2: Tangkap gambar (akan disimpan di telefon)</label>
-            <input
-              id="gambarInput"
-              type="file"
-              accept="image/*"
-              capture="environment"
-            />
-            <img
-              id="preview"
-              class="thumb"
-              alt="Pratonton"
-              style="display: none; margin-top: 8px"
-            />
-            <div class="note">
-              Selepas ambil gambar, pratonton muncul di sini. Gambar asal juga
-              disimpan dalam galeri/peranti anda oleh kamera.
-            </div>
-          </div>
-          <div>
-            <label>Medan 3: Ulasan</label>
-            <textarea
-              id="ulasan"
-              placeholder="cth: Tray fiber rapi, perlukan tagging semula patch cord."
-            ></textarea>
-          </div>
+        <div>
+          <label>Perkara *</label>
+          <input id="perkara" placeholder="cth: Lawatan tapak, pemeriksaan kabel" required>
         </div>
-        <div class="btnbar" style="margin-top: 8px">
-          <button class="primary" id="btnSimpanData">Simpan Data</button>
-          <button class="ghost" id="btnClear">Clear</button>
-          <button class="warn" id="btnAdd">Add</button>
+        <div>
+          <label>Tarikh *</label>
+          <input id="tarikh" type="date" required>
         </div>
-        <div class="note" style="margin-top: 8px">
-          Button <b>Add</b> akan tanya sama ada kekalkan Medan 1 & 3 dan
-          kosongkan Medan 2 (gambar).
+        <div>
+          <label>Nama Bangunan</label>
+          <input id="namaBangunan" placeholder="cth: Blok Pentadbiran">
+        </div>
+        <div>
+          <label>Email *</label>
+          <input id="email" type="email" placeholder="cth: nama@agensi.gov.my" required>
         </div>
       </div>
+      <p class="note">Medan bertanda * adalah wajib. Auto-simpan lokal sehingga dihantar.</p>
+    </div>
 
-      <!-- SECTION 3 -->
-      <div class="card" id="section3">
-        <h2>Section 3 — Senarai (Responsive Table)</h2>
-        <div id="entriesWrap">
-          <table class="table" id="entriesTable">
-            <thead>
-              <tr>
-                <th style="width: 28%">Gambar</th>
-                <th>Lokasi</th>
-                <th>Ulasan</th>
-                <th style="width: 70px">Tindakan</th>
-              </tr>
-            </thead>
-            <tbody id="entriesBody">
-              <tr>
-                <td class="tmuted" colspan="4">Tiada data.</td>
-              </tr>
-            </tbody>
-          </table>
+    <!-- SECTION 2 -->
+    <div class="card" id="section2">
+      <h2>Section 2 — Lokasi, Gambar & Ulasan</h2>
+      <div class="row">
+        <div>
+          <label>Medan 1: Nama bilik / lokasi</label>
+          <input id="lokasi" placeholder="cth: Bilik PABX Aras 3">
+        </div>
+        <div>
+          <label>Medan 2: Tangkap gambar (akan disimpan di telefon)</label>
+          <input id="gambarInput" type="file" accept="image/*" capture="environment">
+          <img id="preview" class="thumb" alt="Pratonton" style="display:none; margin-top:8px"/>
+          <div class="note">Selepas ambil gambar, pratonton muncul di sini. Gambar asal juga disimpan dalam galeri/peranti anda oleh kamera.</div>
+        </div>
+        <div>
+          <label>Medan 3: Ulasan</label>
+          <textarea id="ulasan" placeholder="cth: Tray fiber rapi, perlukan tagging semula patch cord."></textarea>
         </div>
       </div>
+      <div class="btnbar" style="margin-top:8px">
+        <button class="primary" id="btnSimpanData">Simpan Data</button>
+        <button class="ghost" id="btnClear">Clear</button>
+        <button class="warn" id="btnAdd">Add</button>
+      </div>
+      <div class="note" style="margin-top:8px">Button <b>Add</b> akan tanya sama ada kekalkan Medan 1 & 3 dan kosongkan Medan 2 (gambar).</div>
+    </div>
 
-      <!-- SECTION 4 -->
-      <div class="card sticky-footer" id="section4">
-        <h2>Section 4 — Simpan & Hantar</h2>
-        <div class="btnbar">
-          <button id="btnPDF" class="primary">Simpan PDF</button>
-          <button id="btnShare" class="pill">Hantar (WhatsApp / Email)</button>
-          <button id="btnSubmit" class="danger">
-            Simpan & Hantar (Akhiri)
-          </button>
-        </div>
-        <div class="note" style="margin-top: 8px">
-          PDF mengandungi imej bersaiz besar penuh lebar halaman. Gambar juga
-          kekal pada peranti anda melalui kamera.
-        </div>
+    <!-- SECTION 3 -->
+    <div class="card" id="section3">
+      <h2>Section 3 — Senarai (Responsive Table)</h2>
+      <div id="entriesWrap">
+        <table class="table" id="entriesTable">
+          <thead>
+            <tr>
+              <th style="width:28%">Gambar</th>
+              <th>Lokasi</th>
+              <th>Ulasan</th>
+              <th style="width:70px">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="entriesBody">
+            <tr><td class="tmuted" colspan="4">Tiada data.</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div class="toast" id="toast">Berjaya disimpan.</div>
+    <!-- SECTION 4 -->
+    <div class="card sticky-footer" id="section4">
+      <h2>Section 4 — Simpan & Hantar</h2>
+      <div class="btnbar">
+        <button id="btnPDF" class="primary">Simpan PDF</button>
+        <button id="btnShare" class="pill">Hantar (WhatsApp / Email)</button>
+        <button id="btnSubmit" class="danger">Simpan & Hantar (Akhiri)</button>
+      </div>
+      <div class="note" style="margin-top:8px">PDF mengandungi imej bersaiz besar penuh lebar halaman. Gambar juga kekal pada peranti anda melalui kamera.</div>
+    </div>
+  </div>
 
-    <script>
-      // ===== Util asas
-      const $ = (id) => document.getElementById(id);
-      const showToast = (msg) => {
-        const t = $("toast");
-        t.textContent = msg;
-        t.style.display = "block";
-        setTimeout(() => (t.style.display = "none"), 1600);
-      };
-      const todayISO = () => new Date().toISOString().slice(0, 10);
+  <div class="toast" id="toast">Berjaya disimpan.</div>
 
-      // ===== Kunci localStorage
-      const LS_KEYS = {
-        form: "laporan_form_v1",
-        entries: "laporan_entries_v1",
-      };
+<script>
+  // ===== Util asas
+  const $ = (id)=>document.getElementById(id);
+  const showToast=(msg)=>{ const t=$('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',1600); }
+  const todayISO=()=> new Date().toISOString().slice(0,10);
 
-      // ===== Auto-simpan Section 1
-      const formEls = {
-        namaProjek: $("namaProjek"),
-        perkara: $("perkara"),
-        tarikh: $("tarikh"),
-        namaBangunan: $("namaBangunan"),
-        email: $("email"),
-      };
-      const loadForm = () => {
-        try {
-          const data = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-          Object.entries(formEls).forEach(([k, el]) => {
-            if (data[k]) el.value = data[k];
-          });
-          if (!formEls.tarikh.value) formEls.tarikh.value = todayISO();
-        } catch (e) {}
-      };
-      const saveForm = () => {
-        const data = {};
-        Object.entries(formEls).forEach(
-          ([k, el]) => (data[k] = el.value.trim())
-        );
-        localStorage.setItem(LS_KEYS.form, JSON.stringify(data));
-      };
-      Object.values(formEls).forEach((el) =>
-        el.addEventListener("input", saveForm)
-      );
+  // ===== Kunci localStorage
+  const LS_KEYS={
+    form:'laporan_form_v1',
+    entries:'laporan_entries_v1'
+  };
 
-      // ===== Section 2: Gambar preview & resize ke DataURL (untuk PDF & cache)
-      const MAX_WIDTH = 1800; // besar utk PDF
-      const fileToDataURL = (file) =>
-        new Promise((resolve, reject) => {
-          const img = new Image();
-          const fr = new FileReader();
-          fr.onload = () => {
-            img.onload = () => {
-              const scale = Math.min(1, MAX_WIDTH / img.naturalWidth || 1);
-              const w = Math.round(img.naturalWidth * scale);
-              const h = Math.round(img.naturalHeight * scale);
-              const cv = document.createElement("canvas");
-              cv.width = w;
-              cv.height = h;
-              const ctx = cv.getContext("2d");
-              ctx.drawImage(img, 0, 0, w, h);
-              resolve(cv.toDataURL("image/jpeg", 0.92));
-            };
-            img.onerror = reject;
-            img.src = fr.result;
-          };
-          fr.onerror = reject;
-          fr.readAsDataURL(file);
-        });
+  // ===== Auto-simpan Section 1
+  const formEls={ namaProjek:$('namaProjek'), perkara:$('perkara'), tarikh:$('tarikh'), namaBangunan:$('namaBangunan'), email:$('email') };
+  const loadForm=()=>{ try{ const data=JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}'); Object.entries(formEls).forEach(([k,el])=>{ if(data[k]) el.value=data[k]; }); if(!formEls.tarikh.value) formEls.tarikh.value=todayISO(); }catch(e){} }
+  const saveForm=()=>{ const data={}; Object.entries(formEls).forEach(([k,el])=> data[k]=el.value.trim()); localStorage.setItem(LS_KEYS.form, JSON.stringify(data)); };
+  Object.values(formEls).forEach(el=> el.addEventListener('input', saveForm));
 
-      $("gambarInput").addEventListener("change", async (e) => {
-        const f = e.target.files?.[0];
-        if (!f) return;
-        try {
-          const dataURL = await fileToDataURL(f);
-          $("preview").src = dataURL;
-          $("preview").style.display = "block";
-          $("preview").dataset.dataurl = dataURL;
-        } catch (err) {
-          console.error(err);
-          showToast("Gagal baca gambar");
-        }
-      });
+  // ===== Section 2: Gambar preview & resize ke DataURL (untuk PDF & cache)
+  const MAX_WIDTH=1800; // besar utk PDF
+  const fileToDataURL = (file)=> new Promise((resolve,reject)=>{
+    const img=new Image();
+    const fr=new FileReader();
+    fr.onload=()=>{ img.onload=()=>{
+      const scale=Math.min(1, MAX_WIDTH/img.naturalWidth || 1);
+      const w=Math.round(img.naturalWidth*scale);
+      const h=Math.round(img.naturalHeight*scale);
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+      resolve(cv.toDataURL('image/jpeg',0.92));
+    }; img.onerror=reject; img.src=fr.result; };
+    fr.onerror=reject; fr.readAsDataURL(file);
+  });
 
-      // ===== Entries CRUD in localStorage
-      const readEntries = () => {
-        try {
-          return JSON.parse(localStorage.getItem(LS_KEYS.entries) || "[]");
-        } catch (e) {
-          return [];
-        }
-      };
-      const writeEntries = (arr) =>
-        localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
-      const refreshTable = () => {
-        const body = $("entriesBody");
-        body.innerHTML = "";
-        const items = readEntries();
-        if (items.length === 0) {
-          body.innerHTML =
-            '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>';
-          return;
-        }
-        items.forEach((it, idx) => {
-          const tr = document.createElement("tr");
-          const imgTd = document.createElement("td");
-          imgTd.innerHTML = it.img
-            ? `<img src="${it.img}" style="max-width:100%; max-height:180px; border-radius:10px; display:block; margin:auto">`
-            : '<span class="tmuted">(tiada)</span>';
-          const locTd = document.createElement("td");
-          locTd.textContent = it.lokasi || "";
-          const ulTd = document.createElement("td");
-          ulTd.textContent = it.ulasan || "";
-          const actTd = document.createElement("td");
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "Padam";
-          delBtn.className = "ghost";
-          delBtn.onclick = () => {
-            const a = readEntries();
-            a.splice(idx, 1);
-            writeEntries(a);
-            refreshTable();
-            showToast("Dipadam");
-          };
-          actTd.appendChild(delBtn);
-          tr.append(imgTd, locTd, ulTd, actTd);
-          body.appendChild(tr);
-        });
-      };
+  $('gambarInput').addEventListener('change', async (e)=>{
+    const f=e.target.files?.[0]; if(!f) return; try{ const dataURL=await fileToDataURL(f); $('preview').src=dataURL; $('preview').style.display='block'; $('preview').dataset.dataurl=dataURL; }catch(err){ console.error(err); showToast('Gagal baca gambar'); }
+  });
 
-      // Simpan Data satu item
-      $("btnSimpanData").addEventListener("click", () => {
-        const lokasi = $("lokasi").value.trim();
-        const ulasan = $("ulasan").value.trim();
-        const img = $("preview").dataset.dataurl || "";
-        if (!lokasi && !img && !ulasan) {
-          showToast("Tiada apa untuk disimpan");
-          return;
-        }
-        const arr = readEntries();
-        arr.push({ lokasi, ulasan, img, ts: Date.now() });
-        writeEntries(arr);
-        refreshTable();
-        showToast("Berjaya disimpan");
-      });
+  // ===== Entries CRUD in localStorage
+  const readEntries=()=>{ try{return JSON.parse(localStorage.getItem(LS_KEYS.entries)||'[]')}catch(e){return[]} };
+  const writeEntries=(arr)=> localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
+  const refreshTable=()=>{
+    const body=$('entriesBody'); body.innerHTML='';
+    const items=readEntries();
+    if(items.length===0){ body.innerHTML = '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>'; return; }
+    items.forEach((it,idx)=>{
+      const tr=document.createElement('tr');
+      const imgTd=document.createElement('td');
+      imgTd.innerHTML = it.img ? `<img src="${it.img}" style="max-width:100%; max-height:180px; border-radius:10px; display:block; margin:auto">` : '<span class="tmuted">(tiada)</span>';
+      const locTd=document.createElement('td'); locTd.textContent=it.lokasi||'';
+      const ulTd=document.createElement('td'); ulTd.textContent=it.ulasan||'';
+      const actTd=document.createElement('td');
+      const delBtn=document.createElement('button'); delBtn.textContent='Padam'; delBtn.className='ghost';
+      delBtn.onclick=()=>{ const a=readEntries(); a.splice(idx,1); writeEntries(a); refreshTable(); showToast('Dipadam'); };
+      actTd.appendChild(delBtn);
+      tr.append(imgTd, locTd, ulTd, actTd);
+      body.appendChild(tr);
+    });
+  }
 
-      // Clear semua medan section 2
-      $("btnClear").addEventListener("click", () => {
-        $("lokasi").value = "";
-        $("ulasan").value = "";
-        $("gambarInput").value = "";
-        $("preview").style.display = "none";
-        $("preview").removeAttribute("data-dataurl");
-      });
+  // Simpan Data satu item
+  $('btnSimpanData').addEventListener('click', ()=>{
+    const lokasi=$('lokasi').value.trim();
+    const ulasan=$('ulasan').value.trim();
+    const img=$('preview').dataset.dataurl||'';
+    if(!lokasi && !img && !ulasan){ showToast('Tiada apa untuk disimpan'); return; }
+    const arr=readEntries(); arr.push({lokasi, ulasan, img, ts:Date.now()}); writeEntries(arr);
+    refreshTable(); showToast('Berjaya disimpan');
+  });
 
-      // Add (kekal 1 & 3, kosongkan 2?)
-      $("btnAdd").addEventListener("click", () => {
-        const keep = confirm(
-          "Kekalkan Medan 1 (Lokasi) & Medan 3 (Ulasan) dan kosongkan Gambar? Tekan OK untuk kekal, Cancel untuk kosong semua."
-        );
-        if (keep) {
-          $("gambarInput").value = "";
-          $("preview").style.display = "none";
-          $("preview").removeAttribute("data-dataurl");
-          showToast("Lokasi & Ulasan dikekalkan. Gambar dikosongkan.");
-        } else {
-          $("lokasi").value = "";
-          $("ulasan").value = "";
-          $("gambarInput").value = "";
-          $("preview").style.display = "none";
-          $("preview").removeAttribute("data-dataurl");
-          showToast("Semua medan dikosongkan.");
-        }
-      });
+  // Clear semua medan section 2
+  $('btnClear').addEventListener('click', ()=>{
+    $('lokasi').value=''; $('ulasan').value=''; $('gambarInput').value=''; $('preview').style.display='none'; $('preview').removeAttribute('data-dataurl');
+  });
 
-      // ===== Generate PDF
-      async function buildPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
-        const W = doc.internal.pageSize.getWidth();
-        const M = 40; // margin
-        let y = M;
+  // Add (kekal 1 & 3, kosongkan 2?)
+  $('btnAdd').addEventListener('click', ()=>{
+    const keep = confirm('Kekalkan Medan 1 (Lokasi) & Medan 3 (Ulasan) dan kosongkan Gambar? Tekan OK untuk kekal, Cancel untuk kosong semua.');
+    if(keep){ $('gambarInput').value=''; $('preview').style.display='none'; $('preview').removeAttribute('data-dataurl'); showToast('Lokasi & Ulasan dikekalkan. Gambar dikosongkan.'); }
+    else { $('lokasi').value=''; $('ulasan').value=''; $('gambarInput').value=''; $('preview').style.display='none'; $('preview').removeAttribute('data-dataurl'); showToast('Semua medan dikosongkan.'); }
+  });
 
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const entries = readEntries();
+  // ===== Generate PDF
+  async function buildPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'p', unit:'pt', format:'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const M = 40; // margin
+    let y = M;
 
-        // Header
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(16);
-        doc.text("LAPORAN LAWATAN TAPAK", W / 2, y, { align: "center" });
-        y += 24;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.text(`Dijana: ${new Date().toLocaleString()}`, W / 2, y, {
-          align: "center",
-        });
-        y += 22;
+    const form = JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}');
+    const entries = readEntries();
 
-        // Section 1 summary
-        const info = [
-          ["Nama Projek", form.namaProjek || "-"],
-          ["Perkara", form.perkara || "-"],
-          ["Tarikh", form.tarikh || "-"],
-          ["Nama Bangunan", form.namaBangunan || "-"],
-          ["Email", form.email || "-"],
-        ];
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Maklumat Asas", M, y);
-        y += 12;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(11);
-        info.forEach((row) => {
-          if (y > 760) {
-            doc.addPage();
-            y = M;
-          }
-          doc.text(`${row[0]}: `, M, y);
-          doc.text(String(row[1]), M + 120, y, { maxWidth: W - M * 2 - 120 });
-          y += 16;
-        });
+    // Header
+    doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.text('LAPORAN LAWATAN TAPAK', W/2, y, {align:'center'}); y += 24;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text(`Dijana: ${new Date().toLocaleString()}`, W/2, y, {align:'center'}); y += 22;
+    
+    // Section 1 summary
+    const info=[
+      ['Nama Projek', form.namaProjek||'-'],
+      ['Perkara', form.perkara||'-'],
+      ['Tarikh', form.tarikh||'-'],
+      ['Nama Bangunan', form.namaBangunan||'-'],
+      ['Email', form.email||'-']
+    ];
+    doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.text('Maklumat Asas', M, y); y+=12;
+    doc.setFont('helvetica','normal'); doc.setFontSize(11);
+    info.forEach(row=>{
+      if(y>760){ doc.addPage(); y=M; }
+      doc.text(`${row[0]}: `, M, y);
+      doc.text(String(row[1]), M+120, y, {maxWidth: W-M*2-120});
+      y+=16;
+    });
 
-        y += 6;
-        if (y > 780) {
-          doc.addPage();
-          y = M;
-        }
-        doc.setLineWidth(0.5);
-        doc.line(M, y, W - M, y);
-        y += 16;
+    y+=6; if(y>780){ doc.addPage(); y=M; }
+    doc.setLineWidth(0.5); doc.line(M, y, W-M, y); y+=16;
 
-        // Entries with large images
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text("Butiran Lokasi & Gambar", M, y);
-        y += 14;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(11);
+    // Entries with large images
+    doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('Butiran Lokasi & Gambar', M, y); y+=14;
+    doc.setFont('helvetica','normal'); doc.setFontSize(11);
 
-        if (entries.length === 0) {
-          doc.text("(Tiada data)", M, y);
-        } else {
-          for (let i = 0; i < entries.length; i++) {
-            const it = entries[i];
-            if (y > 760) {
-              doc.addPage();
-              y = M;
-            }
-            doc.setFont("helvetica", "bold");
-            doc.text(`Lokasi:`, M, y);
-            doc.setFont("helvetica", "normal");
-            doc.text(String(it.lokasi || "-"), M + 60, y, {
-              maxWidth: W - M * 2 - 60,
-            });
-            y += 16;
-            doc.setFont("helvetica", "bold");
-            doc.text(`Ulasan:`, M, y);
-            doc.setFont("helvetica", "normal");
-            doc.text(String(it.ulasan || "-"), M + 60, y, {
-              maxWidth: W - M * 2 - 60,
-            });
-            y += 16;
+    if(entries.length===0){ doc.text('(Tiada data)', M, y); }
+    else {
+      for(let i=0;i<entries.length;i++){
+        const it=entries[i];
+        if(y>760){ doc.addPage(); y=M; }
+        doc.setFont('helvetica','bold'); doc.text(`Lokasi:`, M, y); doc.setFont('helvetica','normal'); doc.text(String(it.lokasi||'-'), M+60, y, {maxWidth: W-M*2-60}); y+=16;
+        doc.setFont('helvetica','bold'); doc.text(`Ulasan:`, M, y); doc.setFont('helvetica','normal'); doc.text(String(it.ulasan||'-'), M+60, y, {maxWidth: W-M*2-60}); y+=16;
 
-            if (it.img) {
-              // Scale image to full width minus margins
-              const img = it.img; // dataURL
-              // Estimate height keeping aspect by creating an Image
-              const tmp = await new Promise((res) => {
-                const im = new Image();
-                im.onload = () =>
-                  res({
-                    w: im.naturalWidth || 1800,
-                    h: im.naturalHeight || 1200,
-                  });
-                im.src = img;
-              });
-              const maxW = W - M * 2;
-              const ratio = tmp.h / tmp.w;
-              const drawW = maxW;
-              const drawH = drawW * ratio;
-              if (y + drawH > 800) {
-                doc.addPage();
-                y = M;
-              }
-              doc.addImage(img, "JPEG", M, y, drawW, drawH, undefined, "FAST");
-              y += drawH + 18;
-            } else {
-              y += 10;
-            }
+        if(it.img){
+          // Scale image to full width minus margins
+          const img = it.img; // dataURL
+          // Estimate height keeping aspect by creating an Image
+          const tmp = await new Promise((res)=>{ const im=new Image(); im.onload=()=>res({w:im.naturalWidth||1800,h:im.naturalHeight||1200}); im.src=img; });
+          const maxW = W - M*2; const ratio = tmp.h/tmp.w; const drawW = maxW; const drawH = drawW*ratio;
+          if(y+drawH>800){ doc.addPage(); y=M; }
+          doc.addImage(img, 'JPEG', M, y, drawW, drawH, undefined, 'FAST'); y += drawH + 18;
+        } else { y += 10; }
 
-            doc.setDrawColor(210);
-            doc.line(M, y, W - M, y);
-            y += 14;
-          }
-        }
-
-        return doc;
+        doc.setDrawColor(210); doc.line(M, y, W-M, y); y+=14;
       }
+    }
 
-      // Simpan PDF (download)
-      $("btnPDF").addEventListener("click", async () => {
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const fname = `LaporanTapak_${(form.namaProjek || "projek").replace(
-          /\s+/g,
-          "_"
-        )}_${todayISO()}.pdf`;
-        const doc = await buildPDF();
-        doc.save(fname);
-        showToast("PDF disimpan");
-      });
+    return doc;
+  }
 
-      // Share melalui Web Share API (WhatsApp/Email jika disokong)
-      $("btnShare").addEventListener("click", async () => {
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const fname = `LaporanTapak_${(form.namaProjek || "projek").replace(
-          /\s+/g,
-          "_"
-        )}_${todayISO()}.pdf`;
-        const doc = await buildPDF();
-        const blob = doc.output("blob");
-        const file = new File([blob], fname, { type: "application/pdf" });
+  // Simpan PDF (download)
+  $('btnPDF').addEventListener('click', async()=>{
+    const form = JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}');
+    const fname = `LaporanTapak_${(form.namaProjek||'projek').replace(/\s+/g,'_')}_${todayISO()}.pdf`;
+    const doc = await buildPDF();
+    doc.save(fname);
+    showToast('PDF disimpan');
+  });
 
-        if (
-          navigator.share &&
-          navigator.canShare &&
-          navigator.canShare({ files: [file] })
-        ) {
-          try {
-            await navigator.share({
-              title: "Laporan Tapak",
-              text: `Sila rujuk laporan tapak untuk projek: ${
-                form.namaProjek || ""
-              }`,
-              files: [file],
-            });
-            showToast("Laporan dihantar");
-          } catch (e) {
-            console.warn(e);
-            showToast("Dibatalkan/ gagal berkongsi");
-          }
-        } else {
-          // Fallback: muat turun + mailto draft
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fname;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-          const body = encodeURIComponent(
-            `Dilampirkan laporan ${fname}. Jika tidak dilampirkan automatik, mohon attach fail yang dimuat turun.\n\nTerima kasih.`
-          );
-          if (form.email) {
-            window.location.href = `mailto:${encodeURIComponent(
-              form.email
-            )}?subject=${encodeURIComponent(
-              "Laporan Lawatan Tapak"
-            )}&body=${body}`;
-          } else {
-            alert(
-              "Peranti tidak menyokong kongsi terus. PDF telah dimuat turun. Anda boleh hantar melalui WhatsApp atau Email secara manual."
-            );
-          }
-        }
-      });
+  // Share melalui Web Share API (WhatsApp/Email jika disokong)
+  async function shareReport(){
+    const form = JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}');
+    const fname = `LaporanTapak_${(form.namaProjek||'projek').replace(/\\s+/g,'_')}_${todayISO()}.pdf`;
+    const doc = await buildPDF();
+    const blob = doc.output('blob');
+    const file = new File([blob], fname, {type:'application/pdf'});
 
-      // Simpan & Hantar (akhiri sesi: clear form selepas berjaya)
-      $("btnSubmit").addEventListener("click", async () => {
-        // Validasi ringkas
-        const required = ["namaProjek", "perkara", "tarikh", "email"];
-        for (const k of required) {
-          if (!formEls[k].value.trim()) {
-            alert("Sila lengkapkan semua medan wajib di Section 1.");
-            return;
-          }
-        }
+    try{
+      if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({
+          title: 'Laporan Tapak',
+          text: `Sila rujuk laporan tapak untuk projek: ${form.namaProjek||''}`,
+          files: [file]
+        });
+        showToast('Laporan dihantar');
+        return 'shared';
+      }
+    }catch(e){ console.warn('Web Share API gagal/cancel', e); }
 
-        // Cuba share dahulu; jika tidak, sekadar simpan PDF
-        await document.getElementById("btnShare").click();
+    // Fallback: muat turun + mailto draft
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    const body = encodeURIComponent(`Dilampirkan laporan ${fname}. Jika tidak dilampirkan automatik, mohon attach fail yang dimuat turun.\n\nTerima kasih.`);
+    const formEmail = (form.email||'').trim();
+    if(formEmail){ window.location.href = `mailto:${encodeURIComponent(formEmail)}?subject=${encodeURIComponent('Laporan Lawatan Tapak')}&body=${body}`; showToast('PDF dimuat turun. Draf email dibuka.'); return 'downloaded'; }
+    else { alert('Peranti tidak menyokong kongsi terus. PDF telah dimuat turun. Anda boleh hantar melalui WhatsApp atau Email secara manual.'); showToast('PDF dimuat turun'); return 'downloaded'; }
+}
 
-        // Jika sampai sini, kita anggap tindakan selesai -> kosongkan Section 2 & clear cache jika perlu
-        localStorage.removeItem(LS_KEYS.entries);
-        refreshTable();
-        // Seksyen 1 dikekalkan sehingga benar-benar dihantar — ikut kehendak: clear selepas hantar
-        localStorage.removeItem(LS_KEYS.form);
-        Object.values(formEls).forEach((el) => (el.value = ""));
-        $("btnClear").click();
-        showToast("Sesi ditutup. Data dibersihkan.");
-      });
+$('btnShare').addEventListener('click', async()=>{ await shareReport(); });
 
-      // ===== Init
-      loadForm();
-      refreshTable();
-    </script>
-  </body>
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({
+          title: 'Laporan Tapak',
+          text: `Sila rujuk laporan tapak untuk projek: ${form.namaProjek||''}`,
+          files: [file]
+        });
+        showToast('Laporan dihantar');
+      }catch(e){ console.warn(e); showToast('Dibatalkan/ gagal berkongsi'); }
+    } else {
+      // Fallback: muat turun + mailto draft
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      const body = encodeURIComponent(`Dilampirkan laporan ${fname}. Jika tidak dilampirkan automatik, mohon attach fail yang dimuat turun.\n\nTerima kasih.`);
+      if(form.email){ window.location.href = `mailto:${encodeURIComponent(form.email)}?subject=${encodeURIComponent('Laporan Lawatan Tapak')}&body=${body}`; }
+      else { alert('Peranti tidak menyokong kongsi terus. PDF telah dimuat turun. Anda boleh hantar melalui WhatsApp atau Email secara manual.'); }
+    }
+  });
+
+  // Simpan & Hantar (akhiri sesi: clear form selepas berjaya)
+  $('btnSubmit').addEventListener('click', async()=>{
+    // Validasi ringkas
+    const required=['namaProjek','perkara','tarikh','email'];
+    for(const k of required){ if(!formEls[k].value.trim()){ alert('Sila lengkapkan semua medan wajib di Section 1.'); return; } }
+
+    // Cuba share terus (tanpa click programatik) – ini penting utk iOS Safari
+    let outcome;
+    try { outcome = await shareReport(); } catch(e){ console.error(e); alert('Ralat semasa menghantar. PDF telah cuba dimuat turun.'); }
+
+    // Jika sampai sini, anggap tindakan selesai -> kosongkan Section 2 & clear cache jika perlu
+    localStorage.removeItem(LS_KEYS.entries);
+    refreshTable();
+    // Bersih Section 1 selepas hantar
+    localStorage.removeItem(LS_KEYS.form);
+    Object.values(formEls).forEach(el=> el.value='');
+    $('btnClear').click();
+    showToast('Sesi ditutup. Data dibersihkan.');
+  });
+
+  // ===== Init
+  loadForm();
+  refreshTable();
+</script>
+</body>
 </html>
