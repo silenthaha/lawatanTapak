@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- jsPDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-e1N3wC8k0A/7u+V1xQh7U4s7vGvFaw2xqXy3V3g1h8fQw3f8J2b6m9m6m1f8y2zv7F6r2Yw3Gz6d8u2xqXWQmA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- jsPDF (pilihan). Jika tiada internet/CDN disekat, sistem akan fallback ke Cetak ke PDF (Offline) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
     :root {
       --bg:#0b1220; --card:#121a2b; --text:#e7eefc; --muted:#8aa0c6; --accent:#4f8cff; --ok:#17d19b; --warn:#ffcc66; --danger:#ff647c; --border:#1d2942;
@@ -40,10 +40,8 @@
     .tmuted{color:var(--muted)}
     .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:20px; background:#091021; color:#fff; padding:10px 14px; border-radius:10px; border:1px solid var(--border); display:none; z-index:5}
     .note{font-size:.8rem; color:var(--muted)}
-    .split{display:flex; gap:8px}
-    .split > *{flex:1}
-    .hr{height:1px; border:0; background:var(--border); margin:12px 0}
     .sticky-footer{position:sticky; bottom:0; padding-top:8px; background:linear-gradient(180deg, rgba(11,18,32,0) 0%, rgba(11,18,32,0.85) 20%, rgba(11,18,32,1) 60%)}
+    @media print{ #section4, .toast{display:none !important} body{background:#fff;color:#000} }
   </style>
 </head>
 <body>
@@ -133,8 +131,9 @@
         <button id="btnPDF" class="primary">Simpan PDF</button>
         <button id="btnShare" class="pill">Hantar (WhatsApp / Email)</button>
         <button id="btnSubmit" class="danger">Simpan & Hantar (Akhiri)</button>
+        <button id="btnPrint" class="ghost">Cetak ke PDF (Offline)</button>
       </div>
-      <div class="note" style="margin-top:8px">PDF mengandungi imej bersaiz besar penuh lebar halaman. Gambar juga kekal pada peranti anda melalui kamera.</div>
+      <div class="note" style="margin-top:8px">Jika peranti tidak menyokong kongsi terus atau tiada internet, guna <b>"Cetak ke PDF (Offline)"</b>.</div>
     </div>
   </div>
 
@@ -147,10 +146,7 @@
   const todayISO=()=> new Date().toISOString().slice(0,10);
 
   // ===== Kunci localStorage
-  const LS_KEYS={
-    form:'laporan_form_v1',
-    entries:'laporan_entries_v1'
-  };
+  const LS_KEYS={ form:'laporan_form_v1', entries:'laporan_entries_v1' };
 
   // ===== Auto-simpan Section 1
   const formEls={ namaProjek:$('namaProjek'), perkara:$('perkara'), tarikh:$('tarikh'), namaBangunan:$('namaBangunan'), email:$('email') };
@@ -222,8 +218,12 @@
     else { $('lokasi').value=''; $('ulasan').value=''; $('gambarInput').value=''; $('preview').style.display='none'; $('preview').removeAttribute('data-dataurl'); showToast('Semua medan dikosongkan.'); }
   });
 
-  // ===== Generate PDF
+  // ===== Generate PDF dengan jsPDF (jika tersedia)
   async function buildPDF(){
+    if(!window.jspdf || !window.jspdf.jsPDF){
+      alert('Komponen PDF (jsPDF) tidak dimuat. Guna "Cetak ke PDF (Offline)" atau pastikan internet/CDN dibenarkan.');
+      throw new Error('jsPDF not loaded');
+    }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:'p', unit:'pt', format:'a4' });
     const W = doc.internal.pageSize.getWidth();
@@ -272,13 +272,11 @@
         doc.setFont('helvetica','bold'); doc.text(`Ulasan:`, M, y); doc.setFont('helvetica','normal'); doc.text(String(it.ulasan||'-'), M+60, y, {maxWidth: W-M*2-60}); y+=16;
 
         if(it.img){
-          // Scale image to full width minus margins
-          const img = it.img; // dataURL
-          // Estimate height keeping aspect by creating an Image
-          const tmp = await new Promise((res)=>{ const im=new Image(); im.onload=()=>res({w:im.naturalWidth||1800,h:im.naturalHeight||1200}); im.src=img; });
+          // Dapatkan ratio
+          const tmp = await new Promise((res)=>{ const im=new Image(); im.onload=()=>res({w:im.naturalWidth||1800,h:im.naturalHeight||1200}); im.src=it.img; });
           const maxW = W - M*2; const ratio = tmp.h/tmp.w; const drawW = maxW; const drawH = drawW*ratio;
           if(y+drawH>800){ doc.addPage(); y=M; }
-          doc.addImage(img, 'JPEG', M, y, drawW, drawH, undefined, 'FAST'); y += drawH + 18;
+          doc.addImage(it.img, 'JPEG', M, y, drawW, drawH, undefined, 'FAST'); y += drawH + 18;
         } else { y += 10; }
 
         doc.setDrawColor(210); doc.line(M, y, W-M, y); y+=14;
@@ -290,82 +288,115 @@
 
   // Simpan PDF (download)
   $('btnPDF').addEventListener('click', async()=>{
-    const form = JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}');
-    const fname = `LaporanTapak_${(form.namaProjek||'projek').replace(/\s+/g,'_')}_${todayISO()}.pdf`;
-    const doc = await buildPDF();
-    doc.save(fname);
-    showToast('PDF disimpan');
+    try{
+      const form = JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}');
+      const fname = `LaporanTapak_${(form.namaProjek||'projek').replace(/\s+/g,'_')}_${todayISO()}.pdf`;
+      const doc = await buildPDF();
+      doc.save(fname);
+      showToast('PDF disimpan');
+    }catch(e){ console.error(e); }
   });
 
-  // Share melalui Web Share API (WhatsApp/Email jika disokong)
+  // Web Share API + fallback (mailto + download)
   async function shareReport(){
     const form = JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}');
-    const fname = `LaporanTapak_${(form.namaProjek||'projek').replace(/\\s+/g,'_')}_${todayISO()}.pdf`;
-    const doc = await buildPDF();
-    const blob = doc.output('blob');
-    const file = new File([blob], fname, {type:'application/pdf'});
+    const fname = `LaporanTapak_${(form.namaProjek||'projek').replace(/\s+/g,'_')}_${todayISO()}.pdf`;
 
     try{
-      if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
-        await navigator.share({
-          title: 'Laporan Tapak',
-          text: `Sila rujuk laporan tapak untuk projek: ${form.namaProjek||''}`,
-          files: [file]
-        });
-        showToast('Laporan dihantar');
-        return 'shared';
+      if(window.jspdf && window.jspdf.jsPDF){
+        const doc = await buildPDF();
+        const blob = doc.output('blob');
+        const file = new File([blob], fname, {type:'application/pdf'});
+        if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+          await navigator.share({ title:'Laporan Tapak', text:`Sila rujuk laporan tapak untuk projek: ${form.namaProjek||''}`, files:[file] });
+          showToast('Laporan dihantar');
+          return;
+        }
+        // Fallback: muat turun + mailto
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        const body = encodeURIComponent(`Dilampirkan laporan ${fname}. Jika tidak dilampirkan automatik, mohon attach fail yang dimuat turun.\n\nTerima kasih.`);
+        if((form.email||'').trim()){ window.location.href = `mailto:${encodeURIComponent(form.email)}?subject=${encodeURIComponent('Laporan Lawatan Tapak')}&body=${body}`; showToast('PDF dimuat turun. Draf email dibuka.'); }
+        else { alert('PDF dimuat turun. Sila attach secara manual ke WhatsApp/Email.'); showToast('PDF dimuat turun'); }
+        return;
       }
-    }catch(e){ console.warn('Web Share API gagal/cancel', e); }
+    }catch(e){ console.warn('Share gagal/ditolak', e); }
 
-    // Fallback: muat turun + mailto draft
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    const body = encodeURIComponent(`Dilampirkan laporan ${fname}. Jika tidak dilampirkan automatik, mohon attach fail yang dimuat turun.\n\nTerima kasih.`);
-    const formEmail = (form.email||'').trim();
-    if(formEmail){ window.location.href = `mailto:${encodeURIComponent(formEmail)}?subject=${encodeURIComponent('Laporan Lawatan Tapak')}&body=${body}`; showToast('PDF dimuat turun. Draf email dibuka.'); return 'downloaded'; }
-    else { alert('Peranti tidak menyokong kongsi terus. PDF telah dimuat turun. Anda boleh hantar melalui WhatsApp atau Email secara manual.'); showToast('PDF dimuat turun'); return 'downloaded'; }
-}
+    // OFFLINE/Fallback penuh: tiada jsPDF → guna Cetak ke PDF (Offline)
+    alert('Peranti tidak menyokong kongsi fail terus atau jsPDF tiada. Sistem akan buka paparan cetak. Sila simpan sebagai PDF dan hantar manual.');
+    openPrintView();
+  }
 
-$('btnShare').addEventListener('click', async()=>{ await shareReport(); });
+  $('btnShare').addEventListener('click', async()=>{ await shareReport(); });
 
-    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
-      try{
-        await navigator.share({
-          title: 'Laporan Tapak',
-          text: `Sila rujuk laporan tapak untuk projek: ${form.namaProjek||''}`,
-          files: [file]
-        });
-        showToast('Laporan dihantar');
-      }catch(e){ console.warn(e); showToast('Dibatalkan/ gagal berkongsi'); }
-    } else {
-      // Fallback: muat turun + mailto draft
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      const body = encodeURIComponent(`Dilampirkan laporan ${fname}. Jika tidak dilampirkan automatik, mohon attach fail yang dimuat turun.\n\nTerima kasih.`);
-      if(form.email){ window.location.href = `mailto:${encodeURIComponent(form.email)}?subject=${encodeURIComponent('Laporan Lawatan Tapak')}&body=${body}`; }
-      else { alert('Peranti tidak menyokong kongsi terus. PDF telah dimuat turun. Anda boleh hantar melalui WhatsApp atau Email secara manual.'); }
-    }
-  });
-
-  // Simpan & Hantar (akhiri sesi: clear form selepas berjaya)
+  // Simpan & Hantar (akhiri sesi)
   $('btnSubmit').addEventListener('click', async()=>{
-    // Validasi ringkas
     const required=['namaProjek','perkara','tarikh','email'];
     for(const k of required){ if(!formEls[k].value.trim()){ alert('Sila lengkapkan semua medan wajib di Section 1.'); return; } }
-
-    // Cuba share terus (tanpa click programatik) – ini penting utk iOS Safari
-    let outcome;
-    try { outcome = await shareReport(); } catch(e){ console.error(e); alert('Ralat semasa menghantar. PDF telah cuba dimuat turun.'); }
-
-    // Jika sampai sini, anggap tindakan selesai -> kosongkan Section 2 & clear cache jika perlu
+    await shareReport();
+    // Bersih selepas hantar
     localStorage.removeItem(LS_KEYS.entries);
     refreshTable();
-    // Bersih Section 1 selepas hantar
     localStorage.removeItem(LS_KEYS.form);
     Object.values(formEls).forEach(el=> el.value='');
     $('btnClear').click();
     showToast('Sesi ditutup. Data dibersihkan.');
   });
+
+  // ===== Cetak ke PDF (Offline, tanpa jsPDF)
+  function openPrintView(){
+    const form = JSON.parse(localStorage.getItem(LS_KEYS.form)||'{}');
+    const entries = readEntries();
+    const win = window.open('', '_blank');
+    const esc = (s)=>String(s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+    const head = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Tapak (Cetak)</title>
+    <style>
+      body{font-family:Inter,Arial,sans-serif; margin:28pt}
+      h1{font-size:18pt; margin:0 0 6pt; text-align:center}
+      .sub{font-size:10pt; color:#333; text-align:center; margin:0 0 16pt}
+      .row{margin:0 0 6pt}
+      .label{font-weight:700}
+      .img{width:100%; margin:8pt 0 14pt; page-break-inside:avoid;}
+      hr{border:0;border-top:1px solid #ccc;margin:8pt 0}
+      @page{size:A4;margin:20mm}
+    </style>
+    </head><body>`;
+
+    const info = `
+      <div class="row"><span class="label">Nama Projek:</span> ${esc(form.namaProjek)}</div>
+      <div class="row"><span class="label">Perkara:</span> ${esc(form.perkara)}</div>
+      <div class="row"><span class="label">Tarikh:</span> ${esc(form.tarikh)}</div>
+      <div class="row"><span class="label">Nama Bangunan:</span> ${esc(form.namaBangunan)}</div>
+      <div class="row"><span class="label">Email:</span> ${esc(form.email)}</div>
+      <hr>
+    `;
+
+    let body = `${head}<h1>LAPORAN LAWATAN TAPAK</h1><div class="sub">Dijana: ${new Date().toLocaleString()}</div>${info}`;
+
+    if(entries.length===0){
+      body += '<div>(Tiada data)</div>';
+    } else {
+      entries.forEach((it)=>{
+        body += `<div class="row"><span class="label">Lokasi:</span> ${esc(it.lokasi||'')}</div>`;
+        body += `<div class="row"><span class="label">Ulasan:</span> ${esc(it.ulasan||'')}</div>`;
+        if(it.img){ body += `<img class="img" src="${it.img}">`; }
+        body += '<hr>';
+      });
+    }
+
+    body += '</body></html>';
+    win.document.open(); win.document.write(body); win.document.close();
+
+    // Tunggu imej render dahulu sebelum print
+    const timer = setInterval(()=>{
+      const imgs = win.document.images;
+      let ok = true; for(let im of imgs){ if(!im.complete) { ok=false; break; } }
+      if(ok){ clearInterval(timer); win.focus(); win.print(); }
+    }, 200);
+  }
+
+  document.getElementById('btnPrint').addEventListener('click', openPrintView);
 
   // ===== Init
   loadForm();
