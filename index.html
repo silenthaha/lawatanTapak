@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- jsPDF (pilihan). Jika tiada internet/CDN disekat, sistem akan fallback ke cetak HTML -->
+    <!-- jsPDF (pilihan). Jika tiada internet/CDN disekat, fallback ke cetak HTML -->
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <style>
       :root {
@@ -22,6 +22,9 @@
         --text: #e7eefc;
         --muted: #8aa0c6;
         --accent: #4f8cff;
+        --ok: #17d19b;
+        --warn: #ffcc66;
+        --danger: #ff647c;
         --border: #1d2942;
       }
       * {
@@ -39,13 +42,18 @@
         -webkit-text-size-adjust: 100%;
       }
       .wrap {
-        max-width: 880px;
+        max-width: 860px;
         margin-inline: auto;
         padding: 16px;
       }
       h1 {
         font-size: 1.35rem;
         margin: 0 0 8px;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 16px;
       }
       .card {
         background: var(--card);
@@ -72,7 +80,8 @@
         margin-bottom: 6px;
       }
       input,
-      textarea {
+      textarea,
+      select {
         width: 100%;
         padding: 12px;
         background: #0c1529;
@@ -103,11 +112,28 @@
         border-radius: 12px;
         font-weight: 600;
       }
-      button.danger {
-        background: #ff647c;
+      button.primary {
+        background: var(--accent);
         border-color: transparent;
+        color: #fff;
+      }
+      button.ok {
+        background: var(--ok);
+        border-color: transparent;
+        color: #051b11;
+      }
+      button.warn {
+        background: var(--warn);
+        border-color: transparent;
+        color: #111;
+      }
+      button.danger {
+        background: var(--danger);
+        border-color: transparent;
+        color: #fff;
       }
       .thumb {
+        display: block;
         width: 100%;
         max-height: 220px;
         object-fit: contain;
@@ -115,9 +141,21 @@
         border: 1px dashed var(--border);
         border-radius: 12px;
       }
-      .note {
-        font-size: 0.8rem;
+      .tmuted {
         color: var(--muted);
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 20px;
+        background: #091021;
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        display: none;
+        z-index: 5;
       }
       .sticky-footer {
         position: sticky;
@@ -130,17 +168,8 @@
           rgba(11, 18, 32, 1) 60%
         );
       }
-      .grid-previews {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-      }
-      .grid-previews img {
-        width: 100%;
-        height: 120px;
-        object-fit: cover;
-        border-radius: 10px;
-        border: 1px solid var(--border);
+      .btn-ghost {
+        background: transparent;
       }
       @media print {
         #section4,
@@ -157,13 +186,16 @@
   <body>
     <div class="wrap">
       <h1>📋 Laporan Lawatan Tapak</h1>
+      <div class="subtitle">
+        <!-- Mobile-first. Data kekal sehingga anda tekan <b>Simpan & Hantar</b>. -->
+      </div>
 
       <!-- SECTION 1 -->
       <div class="card" id="section1">
         <h2>Maklumat Asas</h2>
         <div class="row cols-2">
           <div>
-            <label>Nama Projek</label>
+            <label>Nama Projek *</label>
             <input
               id="namaProjek"
               placeholder="cth: Naik Taraf IP PBX Bangunan A"
@@ -171,26 +203,26 @@
             />
           </div>
           <div>
-            <label>Perkara (tajuk projek di laporan)</label>
+            <label>Perkara *</label>
             <input
               id="perkara"
-              placeholder="cth: Cadangan Penggantian Sistem PABX ..."
+              placeholder="cth: Khidmat Nasihat Cadangan Penggantian PABX ..."
               required
             />
           </div>
           <div>
-            <label>Tarikh</label>
+            <label>Tarikh *</label>
             <input id="tarikh" type="date" required />
           </div>
           <div>
-            <label>Nama Bangunan / Lokasi</label>
+            <label>Nama Bangunan</label>
             <input
               id="namaBangunan"
               placeholder="cth: Blok Utara, TC4 Tingkat 8"
             />
           </div>
           <div>
-            <label>Email</label>
+            <label>Email *</label>
             <input
               id="email"
               type="email"
@@ -199,91 +231,84 @@
             />
           </div>
         </div>
-        <!-- <p class="note">
-          Isian disimpan sementara di telefon sehingga dihantar.
-        </p> -->
+        <p class="note">
+          <!-- Medan bertanda * adalah wajib. Auto-simpan lokal sehingga dihantar. -->
+        </p>
       </div>
 
-      <!-- SECTION 2: Item -->
+      <!-- SECTION 2 (Item input) -->
       <div class="card" id="section2">
-        <!-- <h2>Butiran Penemuan & Cadangan (Item)</h2> -->
+        <h2>Butiran Lokasi/h2>
         <div class="row">
           <div>
             <label>Nama bilik / lokasi</label>
-            <input id="lokasi" placeholder="cth: Bilik TR Aras 3" />
+            <input id="lokasi" placeholder="cth: Bilik TCR 1" />
           </div>
+
           <div>
-            <label>Gambar (maks 3, kiri=Penemuan, kanan=Cadangan)</label>
-            <input
-              id="gambarInput"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              multiple
-            />
-            <div
-              id="previews"
-              class="grid-previews"
-              style="margin-top: 8px"
-            ></div>
-            <div class="note">
-              Telefon akan simpan salinan gambar asal. Aplikasi simpan versi di
-              laporan.
+            <label>Gambar (pilih Kamera atau Galeri)</label>
+            <div class="btnbar">
+              <input
+                id="fileCamera"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                hidden
+              />
+              <input id="fileGallery" type="file" accept="image/*" hidden />
+              <button id="btnKamera" class="primary">📷 Kamera</button>
+              <button id="btnGaleri" class="primary">🖼️ Galeri</button>
             </div>
+            <img
+              id="preview"
+              class="thumb"
+              alt="Pratonton"
+              style="display: none; margin-top: 8px"
+            />
           </div>
+
           <div>
-            <label>Penemuan (bullet/point)</label>
+            <label>Ulasan (bullet atau baris baharu)</label>
             <textarea
               id="ulasan"
-              placeholder="cth: • Cable slack terlalu panjang\n• Tiada vertical cable management"
-            ></textarea>
-          </div>
-          <div>
-            <label>Cadangan (bullet/point)</label>
-            <textarea
-              id="cadangan"
-              placeholder="cth: • Panjangkan TR ≥ 1m (ANSI 568-D)\n• Susun semula ikut vertical cable management"
+              placeholder="• Kabel network UTP 6A...&#10;• Tray fiber rapi..."
             ></textarea>
           </div>
         </div>
+
         <div class="btnbar" style="margin-top: 8px">
-          <button id="btnItemSave">Tambah Item ke Senarai</button>
-          <button id="btnItemClear">Kosongkan Medan Item</button>
+          <button class="ok" id="btnSimpanData">Tambah item ke Senarai</button>
+          <button class="warn" id="btnClear">Kosongkan Medan Item</button>
         </div>
       </div>
 
-      <!-- SECTION 3: Senarai item -->
+      <!-- SECTION 3 (list) -->
       <div class="card" id="section3">
-        <!-- <h2>Senarai Item Direkod</h2> -->
-        <table class="table" style="width: 100%">
+        <!-- <h2>Section 3 — Senarai Item</h2> -->
+        <table class="table" id="entriesTable">
           <thead>
             <tr>
               <th style="width: 28%">Gambar</th>
               <th>Lokasi</th>
-              <th>Penemuan</th>
-              <th>Cadangan</th>
+              <th>Ulasan</th>
               <th style="width: 70px">Tindakan</th>
             </tr>
           </thead>
           <tbody id="entriesBody">
             <tr>
-              <td class="tmuted" colspan="5">Tiada data.</td>
+              <td class="tmuted" colspan="4">Tiada data.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- SECTION 4: Hanya Simpan & Hantar -->
+      <!-- SECTION 4 (only Simpan & Hantar) -->
       <div class="card sticky-footer" id="section4">
-        <!-- <h2>Simpan & Hantar</h2> -->
+        <h2>Section 4 — Simpan & Hantar</h2>
         <div class="btnbar">
           <button id="btnSubmit" class="danger">
-            Simpan & Hantar (Akhiri)
+            Simpan & Hantar
           </button>
-        </div>
-        <div class="note" style="margin-top: 8px">
-          <!-- Butang lain dimatikan seperti diminta. Jika peranti tidak menyokong
-          perkongsian PDF, sistem akan buka paparan cetak. -->
         </div>
       </div>
     </div>
@@ -291,20 +316,21 @@
     <div class="toast" id="toast">Berjaya disimpan.</div>
 
     <script>
+      // ===== Util asas
       const $ = (id) => document.getElementById(id);
-      const showToast = (m) => {
+      const showToast = (msg) => {
         const t = $("toast");
-        t.textContent = m;
+        t.textContent = msg;
         t.style.display = "block";
         setTimeout(() => (t.style.display = "none"), 1600);
       };
       const todayISO = () => new Date().toISOString().slice(0, 10);
       const LS_KEYS = {
-        form: "laporan_form_v2",
-        entries: "laporan_entries_v2",
+        form: "laporan_form_v4",
+        entries: "laporan_entries_v4",
       };
 
-      // ===== Form autosave
+      // ===== Autosave form
       const formEls = {
         namaProjek: $("namaProjek"),
         perkara: $("perkara"),
@@ -330,10 +356,10 @@
         el.addEventListener("input", saveForm)
       );
 
-      // ===== Image handling (max 3)
+      // ===== Gambar (kamera / galeri)
       const MAX_WIDTH = 1800;
       const fileToDataURL = (file) =>
-        new Promise((res, rej) => {
+        new Promise((resolve, reject) => {
           const img = new Image();
           const fr = new FileReader();
           fr.onload = () => {
@@ -342,42 +368,45 @@
                 1,
                 MAX_WIDTH / (img.naturalWidth || MAX_WIDTH)
               );
-              const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale);
-              const h = Math.round(
-                (img.naturalHeight || MAX_WIDTH * 0.66) * scale
-              );
+              const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale),
+                h = Math.round((img.naturalHeight || MAX_WIDTH * 0.66) * scale);
               const cv = document.createElement("canvas");
               cv.width = w;
               cv.height = h;
               cv.getContext("2d").drawImage(img, 0, 0, w, h);
-              res(cv.toDataURL("image/jpeg", 0.9));
+              resolve(cv.toDataURL("image/jpeg", 0.92));
             };
-            img.onerror = rej;
+            img.onerror = reject;
             img.src = fr.result;
           };
-          fr.onerror = rej;
+          fr.onerror = reject;
           fr.readAsDataURL(file);
         });
-      const previews = $("previews");
-      const state = { files: [] };
-      $("gambarInput").addEventListener("change", async (e) => {
-        const files = [...e.target.files].slice(0, 3);
-        state.files = [];
-        previews.innerHTML = "";
-        for (const f of files) {
-          try {
-            const url = await fileToDataURL(f);
-            state.files.push(url);
-            const im = document.createElement("img");
-            im.src = url;
-            previews.appendChild(im);
-          } catch (err) {
-            console.warn(err);
-          }
-        }
-      });
 
-      // ===== Entries list (lokasi, penemuan, cadangan, images[])
+      const state = { imgData: "" };
+      $("btnKamera").addEventListener("click", () => $("fileCamera").click());
+      $("btnGaleri").addEventListener("click", () => $("fileGallery").click());
+      async function onFilePicked(file) {
+        if (!file) return;
+        try {
+          const url = await fileToDataURL(file);
+          state.imgData = url;
+          const p = $("preview");
+          p.src = url;
+          p.style.display = "block";
+        } catch (e) {
+          console.error(e);
+          showToast("Gagal baca gambar");
+        }
+      }
+      $("fileCamera").addEventListener("change", (e) =>
+        onFilePicked(e.target.files?.[0])
+      );
+      $("fileGallery").addEventListener("change", (e) =>
+        onFilePicked(e.target.files?.[0])
+      );
+
+      // ===== Entries (lokasi, ulasan, img)
       const readEntries = () => {
         try {
           return JSON.parse(localStorage.getItem(LS_KEYS.entries) || "[]");
@@ -393,193 +422,197 @@
         const items = readEntries();
         if (items.length === 0) {
           body.innerHTML =
-            '<tr><td class="tmuted" colspan="5">Tiada data.</td></tr>';
+            '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>';
           return;
         }
         items.forEach((it, idx) => {
           const tr = document.createElement("tr");
-          const tdImg = document.createElement("td");
-          tdImg.innerHTML = (it.images || []).length
-            ? it.images
-                .map(
-                  (u) =>
-                    `<img src="${u}" style="max-width:100%;max-height:120px;border-radius:8px;display:block;margin-bottom:6px">`
-                )
-                .join("")
+          const tImg = document.createElement("td");
+          tImg.innerHTML = it.img
+            ? `<img src="${it.img}" style="max-width:100%; max-height:150px; border-radius:8px">`
             : '<span class="tmuted">(tiada)</span>';
-          const tdLok = document.createElement("td");
-          tdLok.textContent = it.lokasi || "";
-          const tdPen = document.createElement("td");
-          tdPen.innerHTML = (it.ulasan || "").replace(/\n/g, "<br>");
-          const tdCad = document.createElement("td");
-          tdCad.innerHTML = (it.cadangan || "").replace(/\n/g, "<br>");
-          const tdAct = document.createElement("td");
+          const tLok = document.createElement("td");
+          tLok.textContent = it.lokasi || "";
+          const tUlas = document.createElement("td");
+          tUlas.innerHTML = (it.ulasan || "").replace(/\n/g, "<br>");
+          const tAct = document.createElement("td");
           const del = document.createElement("button");
+          del.className = "btn-ghost";
           del.textContent = "Padam";
           del.onclick = () => {
-            const arr = readEntries();
-            arr.splice(idx, 1);
-            writeEntries(arr);
+            const a = readEntries();
+            a.splice(idx, 1);
+            writeEntries(a);
             refreshTable();
           };
-          tdAct.appendChild(del);
-          tr.append(tdImg, tdLok, tdPen, tdCad, tdAct);
+          tAct.appendChild(del);
+          tr.append(tImg, tLok, tUlas, tAct);
           body.appendChild(tr);
         });
       };
 
-      $("btnItemSave").addEventListener("click", () => {
+      $("btnSimpanData").addEventListener("click", () => {
         const lokasi = $("lokasi").value.trim();
         const ulasan = $("ulasan").value.trim();
-        const cadangan = $("cadangan").value.trim();
-        const images = [...state.files];
-        if (!lokasi && !ulasan && !cadangan && images.length === 0) {
+        const img = state.imgData || "";
+        if (!lokasi && !ulasan && !img) {
           showToast("Tiada apa untuk disimpan");
           return;
         }
         const arr = readEntries();
-        arr.push({ lokasi, ulasan, cadangan, images, ts: Date.now() });
+        arr.push({ lokasi, ulasan, img, ts: Date.now() });
         writeEntries(arr);
         refreshTable();
         showToast("Item ditambah");
       });
-      $("btnItemClear").addEventListener("click", () => {
+
+      $("btnClear").addEventListener("click", () => {
         $("lokasi").value = "";
         $("ulasan").value = "";
-        $("cadangan").value = "";
-        $("gambarInput").value = "";
-        state.files = [];
-        previews.innerHTML = "";
+        state.imgData = "";
+        $("preview").style.display = "none";
+        $("fileCamera").value = "";
+        $("fileGallery").value = "";
       });
 
-      // ===== PDF builder (gaya seperti contoh)
+      // ===== PDF builder (ulang Maklumat Asas di setiap page, item: kiri gambar, kanan ulasan)
       async function buildPDF() {
-        if (!window.jspdf || !window.jspdf.jsPDF) {
+        if (!window.jspdf || !window.jspdf.jsPDF)
           throw new Error("jsPDF not loaded");
-        }
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
-        const W = doc.internal.pageSize.getWidth(),
-          H = doc.internal.pageSize.getHeight();
+        const W = doc.internal.pageSize.getWidth();
+        const H = doc.internal.pageSize.getHeight();
         const M = 36;
         let y = M;
+
         const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
         const items = readEntries();
 
-        // Tajuk
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
-        doc.text("LAPORAN LAWATAN TAPAK", M, y);
-        y += 22;
-        // Projek / Perkara
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.text("Projek:", M, y);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(200, 0, 0);
-        const proj = form.perkara || "-";
-        doc.text(proj, M + 52, y, { maxWidth: W - M * 2 - 52 });
-        doc.setTextColor(0, 0, 0);
-        y += 10;
-        doc.setDrawColor(200, 0, 0);
-        doc.line(
-          M + 52,
-          y,
-          M + 52 + Math.min(doc.getTextWidth(proj), W - M * 2 - 52),
-          y
-        );
-        y += 12;
+        function hRule() {
+          doc.setDrawColor(0);
+          doc.setLineWidth(0.6);
+          doc.line(M, y, W - M, y);
+        }
 
-        // Jadual maklumat projek
-        const rowH = 20;
-        doc.setDrawColor(180);
-        doc.setLineWidth(0.5);
-        doc.rect(M, y, W - M * 2, rowH * 2);
-        doc.setFont("helvetica", "bold");
-        doc.text("Maklumat Projek", M + 8, y + 14);
-        doc.text("Butiran", W / 2 + 8, y + 14);
-        // Tarikh
-        doc.setFont("helvetica", "normal");
-        doc.line(M, y + rowH, W - M, y + rowH);
-        doc.text("Tarikh", M + 8, y + rowH + 14 - 8);
-        doc.text(String(form.tarikh || "-"), W / 2 + 8, y + rowH + 14 - 8);
-        // Lokasi
-        doc.line(M, y + rowH * 2, W - M, y + rowH * 2);
-        doc.text("Lokasi", M + 8, y + rowH * 2 + 14 - 8);
-        doc.text(
-          String(form.namaBangunan || "-"),
-          W / 2 + 8,
-          y + rowH * 2 + 14 - 8
-        );
-        y += rowH * 2 + 14;
-
-        // Bagi setiap item → seksyen 2 kolum: Penemuan / Cadangan
-        const drawItem = async (it) => {
-          if (y > H - 240) {
-            doc.addPage();
-            y = M;
-          }
-          // Header bar nipis
-          doc.setDrawColor(210);
-          doc.setFillColor(245);
-          doc.roundedRect(M, y, W - M * 2, 22, 3, 3, "S");
+        function drawHeader() {
+          y = M;
+          // Tajuk
           doc.setFont("helvetica", "bold");
-          doc.text("Penemuan", M + 8, y + 15);
-          doc.text("Cadangan", W / 2 + 8, y + 15);
-          y += 26;
-          // Gambar kiri (ambil imej pertama)
-          const leftImg = (it.images || [])[0];
-          const rightImgs = (it.images || []).slice(1, 3);
-          let boxH = 160; // ruang untuk gambar
-          if (leftImg) {
-            const dim = await imgDim(leftImg);
-            const mw = W / 2 - M * 1.5;
-            const ratio = dim.h / dim.w;
-            const dw = mw;
-            const dh = dw * ratio;
-            doc.addImage(leftImg, "JPEG", M, y, dw, Math.min(dh, boxH));
-          }
-          // kanan - hingga 2 gambar bertindan menegak
-          let xR = W / 2 + M / 2;
-          let yR = y;
-          const mwR = W / 2 - M * 1.5;
-          for (const u of rightImgs) {
-            const dim = await imgDim(u);
-            const ratio = dim.h / dim.w;
-            const dw = mwR;
-            const dh = Math.min(dw * ratio, boxH / (rightImgs.length || 1));
-            doc.addImage(u, "JPEG", xR, yR, dw, dh);
-            yR += dh + 6;
-          }
-          y += boxH + 6;
-          // Bullet teks
-          const wrap = (t) =>
-            (t || "").split(/\n+/).map((s) => `• ${s.replace(/^•\s*/, "")}`);
+          doc.setFontSize(16);
+          doc.text("LAPORAN • LAWATAN • TAPAK", W / 2, y, { align: "center" });
+          y += 16;
           doc.setFont("helvetica", "normal");
-          let leftText = wrap(it.ulasan).join("\n");
-          let rightText = wrap(it.cadangan).join("\n");
-          const leftH = doc.splitTextToSize(leftText, W / 2 - M * 1.5);
-          const rightH = doc.splitTextToSize(rightText, W / 2 - M * 1.5);
-          const hBlock = Math.max(leftH.length * 12, rightH.length * 12) + 8; // anggaran
-          if (y + hBlock > H - M) {
-            doc.addPage();
-            y = M;
-          }
-          doc.text(leftH, M, y + 12);
-          doc.text(rightH, W / 2 + M / 2, y + 12);
-          y += hBlock + 6;
-        };
-
-        const imgDim = (src) =>
-          new Promise((r) => {
-            const im = new Image();
-            im.onload = () =>
-              r({ w: im.naturalWidth || 1200, h: im.naturalHeight || 800 });
-            im.src = src;
+          doc.setFontSize(10);
+          doc.text(`Dijana: ${new Date().toLocaleString()}`, W / 2, y, {
+            align: "center",
           });
+          y += 14;
 
-        for (const it of items) {
-          await drawItem(it);
+          // Jadual Maklumat Asas | Butiran
+          y += 6;
+          const rowH = 22;
+          doc.setDrawColor(120);
+          doc.setLineWidth(0.7);
+          doc.rect(M, y, W - M * 2, rowH * 2);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.text("Maklumat Asas", M + 8, y + 15);
+          doc.text("Butiran", W / 2 + 8, y + 15);
+          doc.line(M, y + rowH, W - M, y + rowH);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10.5);
+          doc.text("Tarikh", M + 8, y + rowH + 14 - 6);
+          doc.text(String(form.tarikh || "-"), W / 2 + 8, y + rowH + 14 - 6);
+          doc.line(M, y + rowH * 2, W - M, y + rowH * 2);
+          doc.text("Lokasi", M + 8, y + rowH * 2 + 14 - 6);
+          doc.text(
+            String(form.namaBangunan || "-"),
+            W / 2 + 8,
+            y + rowH * 2 + 14 - 6
+          );
+
+          y += rowH * 2 + 10;
+          hRule();
+          y += 8;
+        }
+
+        async function drawItem(it, idx) {
+          const minNeeded = 240; // anggaran minimum untuk satu item
+          if (y + minNeeded > H - M) {
+            doc.addPage();
+            drawHeader();
+          }
+
+          const leftX = M,
+            rightX = W / 2,
+            boxW = (W - M * 2) / 2,
+            headH = 22,
+            imgH = 160;
+
+          // Kepala: No + Lokasi | Ulasan
+          doc.setDrawColor(150);
+          doc.setLineWidth(0.6);
+          doc.rect(leftX, y, boxW, headH);
+          doc.rect(rightX, y, boxW, headH);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10.5);
+          doc.text(`No: ${idx + 1}`, leftX + 8, y + 14);
+          doc.text(`Lokasi: ${String(it.lokasi || "-")}`, leftX + 70, y + 14, {
+            maxWidth: boxW - 78,
+          });
+          doc.text("Ulasan:", rightX + 8, y + 14);
+          y += headH;
+
+          // Kiri: gambar
+          if (it.img) {
+            const dim = await new Promise((res) => {
+              const im = new Image();
+              im.onload = () =>
+                res({ w: im.naturalWidth || 1200, h: im.naturalHeight || 800 });
+              im.src = it.img;
+            });
+            const ratio = dim.h / dim.w;
+            const dw = boxW - 10;
+            const dh = Math.min(imgH, dw * ratio);
+            doc.rect(leftX, y, boxW, imgH);
+            doc.addImage(
+              it.img,
+              "JPEG",
+              leftX + 5,
+              y + 5,
+              dw,
+              dh,
+              undefined,
+              "FAST"
+            );
+          } else {
+            doc.rect(leftX, y, boxW, imgH);
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.text("(tiada gambar)", leftX + boxW / 2, y + imgH / 2, {
+              align: "center",
+            });
+          }
+
+          // Kanan: Ulasan sahaja
+          doc.rect(rightX, y, boxW, imgH);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10.5);
+          const bullets = String(it.ulasan || "")
+            .split(/\n+/)
+            .map((s) => "• " + s.replace(/^•\s*/, ""));
+          const wrapped = doc.splitTextToSize(bullets.join("\n"), boxW - 10);
+          doc.text(wrapped, rightX + 6, y + 14);
+
+          y += imgH + 8;
+        }
+
+        // Header mula
+        drawHeader();
+        for (let i = 0; i < items.length; i++) {
+          await drawItem(items[i], i);
         }
 
         return doc;
@@ -603,7 +636,7 @@
             ) {
               await navigator.share({
                 title: "Laporan Tapak",
-                text: `Laporan projek: ${form.namaProjek || ""}`,
+                text: `Laporan: ${form.namaProjek || ""}`,
                 files: [file],
               });
               return;
@@ -621,35 +654,34 @@
         } catch (e) {
           console.warn(e);
         }
-        // Fallback cetak HTML
-        openPrintView();
+        openPrintView(); // fallback HTML print
       }
 
-      // Submit
+      // Submit sahaja di Section 4
       $("btnSubmit").addEventListener("click", async () => {
-        const req = ["namaProjek", "perkara", "tarikh", "email"];
-        for (const k of req) {
+        const required = ["namaProjek", "perkara", "tarikh", "email"];
+        for (const k of required) {
           if (!formEls[k].value.trim()) {
-            alert("Sila lengkapkan semua medan wajib.");
+            alert("Sila lengkapkan semua medan wajib di Section 1.");
             return;
           }
         }
         await shareOrPrint();
-        // bersih selepas hantar
+        // bersih data
         localStorage.removeItem(LS_KEYS.entries);
         localStorage.removeItem(LS_KEYS.form);
         $("entriesBody").innerHTML =
-          '<tr><td class="tmuted" colspan="5">Tiada data.</td></tr>';
+          '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>';
+        ["lokasi", "ulasan"].forEach((id) => ($(id).value = ""));
+        state.imgData = "";
+        $("preview").style.display = "none";
+        $("fileCamera").value = "";
+        $("fileGallery").value = "";
         Object.values(formEls).forEach((el) => (el.value = ""));
-        $("lokasi").value = "";
-        $("ulasan").value = "";
-        $("cadangan").value = "";
-        $("gambarInput").value = "";
-        $("previews").innerHTML = "";
         showToast("Selesai. Data dibersihkan.");
       });
 
-      // ===== Cetak HTML (menyerupai contoh)
+      // ===== Cetak HTML fallback (ulang header setiap halaman; item: kiri gambar, kanan ulasan)
       function openPrintView() {
         const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
         const items = readEntries();
@@ -659,71 +691,51 @@
             /[&<>]/g,
             (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])
           );
-
-        const head = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan Tapak (Cetak)</title>
-    <style>
-      body{font-family:Inter,Arial,sans-serif;margin:14mm}
-      h1{font-size:18pt;margin:0 0 6pt}
-      .proj{font-size:10.5pt}
-      .u{color:#b40000;border-bottom:2px solid #b40000;padding-bottom:1pt}
-      table{border-collapse:collapse;width:100%;font-size:10pt}
-      th,td{border:1px solid #d0d0d0;padding:6pt;vertical-align:top}
-      .headrow th{background:#f3f3f3}
-      .two th{background:#f7efe7}
-      .colhead{font-weight:700;text-align:center}
-      .gallery img{width:100%;height:150pt;object-fit:cover}
-      ul{margin:6pt 0 0 14pt}
-      @page{size:A4;margin:14mm}
-      .page-break{page-break-before:always}
-    </style></head><body>`;
-
-        let html = `${head}
-      <h1>LAPORAN LAWATAN TAPAK</h1>
-      <div class="proj">Projek: <span class="u">${esc(
-        form.perkara
-      )}</span></div>
-      <table style="margin-top:8pt">
-        <tr class="headrow"><th style="width:40%">Maklumat Projek</th><th>Butiran</th></tr>
-        <tr><td>Tarikh</td><td>${esc(form.tarikh)}</td></tr>
-        <tr><td>Lokasi</td><td>${esc(form.namaBangunan)}</td></tr>
-      </table>
-    `;
-
-        if (items.length === 0) {
-          html += '<p style="margin-top:10pt">(Tiada item direkod)</p>';
-        } else {
-          items.forEach((it, idx) => {
-            if (idx > 0) html += '<div class="page-break"></div>';
-            html += `
-          <table style="margin-top:10pt">
-            <tr class="two"><th class="colhead">Penemuan</th><th class="colhead">Cadangan</th></tr>
-            <tr>
-              <td class="gallery">${
-                (it.images || [])[0] ? `<img src="${it.images[0]}">` : ""
-              }</td>
-              <td class="gallery">${
-                (it.images || [])[1] ? `<img src="${it.images[1]}">` : ""
-              }${
-              (it.images || [])[2]
-                ? `<div style="margin-top:6pt"><img src="${it.images[2]}"></div>`
-                : ""
-            }</td>
-            </tr>
-            <tr>
-              <td><ul>${esc(it.ulasan || "")
-                .split(/\n+/)
-                .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
-                .join("")}</ul></td>
-              <td><ul>${esc(it.cadangan || "")
-                .split(/\n+/)
-                .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
-                .join("")}</ul></td>
-            </tr>
+        const head = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan (Cetak)</title>
+        <style>
+          body{font-family:Inter,Arial,sans-serif;margin:14mm}
+          h1{font-size:16pt;margin:0 0 4pt;text-align:center}
+          .sub{font-size:9pt;text-align:center;margin:0 0 8pt}
+          table{border-collapse:collapse;width:100%;font-size:10pt}
+          th,td{border:1px solid #aaa;padding:6pt;vertical-align:top}
+          .page-break{page-break-before:always}
+          .gallery img{width:100%;height:150pt;object-fit:cover}
+          @page{size:A4;margin:14mm}
+        </style></head><body>`;
+        const headerBlock = `
+          <h1>LAPORAN • LAWATAN • TAPAK</h1>
+          <div class="sub">Dijana: ${new Date().toLocaleString()}</div>
+          <table>
+            <tr><th style="width:40%">Maklumat Asas</th><th>Butiran</th></tr>
+            <tr><td>Tarikh</td><td>${esc(form.tarikh)}</td></tr>
+            <tr><td>Lokasi</td><td>${esc(form.namaBangunan)}</td></tr>
           </table>
         `;
-          });
+        let html = head + headerBlock;
+        if (items.length === 0) {
+          html += "<p>(Tiada item)</p>";
         }
-
+        items.forEach((it, idx) => {
+          if (idx > 0) html += '<div class="page-break"></div>' + headerBlock;
+          html += `
+            <table style="margin-top:8pt">
+              <tr><th style="width:50%">No: ${
+                idx + 1
+              } &nbsp;&nbsp; Lokasi: ${esc(
+            it.lokasi || "-"
+          )}</th><th>Ulasan</th></tr>
+              <tr>
+                <td class="gallery">${
+                  it.img ? `<img src="${it.img}">` : "(tiada gambar)"
+                }</td>
+                <td><ul>${esc(it.ulasan || "")
+                  .split(/\n+/)
+                  .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
+                  .join("")}</ul></td>
+              </tr>
+            </table>
+          `;
+        });
         html += "</body></html>";
         win.document.open();
         win.document.write(html);
@@ -745,9 +757,45 @@
         }, 200);
       }
 
-      // ===== init
+      // ===== init & mobile keyboard handling
       loadForm();
       refreshTable();
+      (function () {
+        const vp = document.querySelector('meta[name="viewport"]');
+        function lock() {
+          if (vp)
+            vp.setAttribute(
+              "content",
+              "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+            );
+        }
+        function unlock() {
+          if (vp)
+            vp.setAttribute(
+              "content",
+              "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+            );
+        }
+        document.addEventListener("focusin", (e) => {
+          if (/INPUT|TEXTAREA/.test(e.target.tagName)) lock();
+        });
+        document.addEventListener("focusout", (e) => {
+          if (/INPUT|TEXTAREA/.test(e.target.tagName)) unlock();
+        });
+        if (window.visualViewport) {
+          const foot = $("section4"),
+            wrap = document.querySelector(".wrap");
+          const adjust = () => {
+            const vv = visualViewport;
+            const kb = Math.max(0, innerHeight - vv.height);
+            wrap.style.paddingBottom = (kb ? kb + 24 : 16) + "px";
+            if (foot) foot.style.marginBottom = (kb ? kb : 0) + "px";
+          };
+          visualViewport.addEventListener("resize", adjust);
+          visualViewport.addEventListener("scroll", adjust);
+          adjust();
+        }
+      })();
     </script>
   </body>
 </html>
