@@ -380,39 +380,44 @@
         el.addEventListener("input", saveForm)
       );
 
-      // ===== Image handling - Store temporarily, display in PDF only
-      const MAX_WIDTH = window.navigator.userAgent.includes('iPhone') ? 1200 : 1800;
-      const tempImages = new Map(); // Temporary storage for images
+      // ===== Image handling - Unlimited storage with thumbnails
+      const MAX_WIDTH = 1200; // Same for all devices
+      const THUMB_WIDTH = 150; // Small thumbnail for preview
+      const tempImages = new Map(); // Full images for PDF
+      const thumbImages = new Map(); // Small thumbnails for preview
       const fileToDataURL = (file) =>
         new Promise((resolve, reject) => {
           const img = new Image();
           const fr = new FileReader();
           fr.onload = () => {
             img.onload = () => {
-              const scale = Math.min(
-                1,
-                MAX_WIDTH / (img.naturalWidth || MAX_WIDTH)
-              );
-              const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale),
-                h = Math.round((img.naturalHeight || MAX_WIDTH * 0.66) * scale);
+              // Create full size image for PDF
+              const scale = Math.min(1, MAX_WIDTH / (img.naturalWidth || MAX_WIDTH));
+              const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale);
+              const h = Math.round((img.naturalHeight || MAX_WIDTH * 0.66) * scale);
+              
               const cv = document.createElement("canvas");
               cv.width = w;
               cv.height = h;
               const ctx = cv.getContext("2d");
               ctx.drawImage(img, 0, 0, w, h);
               
-              // Lower quality for iPhone to reduce memory usage
-              const quality = window.navigator.userAgent.includes('iPhone') ? 0.7 : 0.92;
-              const dataURL = cv.toDataURL("image/jpeg", quality);
+              const fullImage = cv.toDataURL("image/jpeg", 0.85);
               
-              // Check size - iPhone limit
-              const sizeKB = (dataURL.length * 3) / 4 / 1024;
-              if (sizeKB > 500 && window.navigator.userAgent.includes('iPhone')) {
-                // Further reduce quality if too large
-                resolve(cv.toDataURL("image/jpeg", 0.5));
-              } else {
-                resolve(dataURL);
-              }
+              // Create small thumbnail for preview
+              const thumbScale = Math.min(1, THUMB_WIDTH / (img.naturalWidth || THUMB_WIDTH));
+              const thumbW = Math.round((img.naturalWidth || THUMB_WIDTH) * thumbScale);
+              const thumbH = Math.round((img.naturalHeight || THUMB_WIDTH * 0.66) * thumbScale);
+              
+              const thumbCanvas = document.createElement("canvas");
+              thumbCanvas.width = thumbW;
+              thumbCanvas.height = thumbH;
+              const thumbCtx = thumbCanvas.getContext("2d");
+              thumbCtx.drawImage(img, 0, 0, thumbW, thumbH);
+              
+              const thumbnail = thumbCanvas.toDataURL("image/jpeg", 0.6);
+              
+              resolve({ fullImage, thumbnail });
             };
             img.onerror = reject;
             img.src = fr.result;
@@ -421,7 +426,7 @@
           fr.readAsDataURL(file);
         });
 
-      const state = { imgData: "" };
+      const state = { imgData: "", thumbData: "" };
       
       $("btnKamera").addEventListener("click", () => $("fileCamera").click());
       $("btnGaleri").addEventListener("click", () => $("fileGallery").click());
@@ -429,10 +434,11 @@
       async function onFilePicked(file) {
         if (!file) return;
         try {
-          const url = await fileToDataURL(file);
-          state.imgData = url;
+          const { fullImage, thumbnail } = await fileToDataURL(file);
+          state.imgData = fullImage;
+          state.thumbData = thumbnail;
           const p = $("preview");
-          p.src = url;
+          p.src = thumbnail; // Show thumbnail in preview
           p.style.display = "block";
         } catch (e) {
           console.error(e);
@@ -447,15 +453,12 @@
         onFilePicked(e.target.files?.[0])
       );
 
-      // ===== Entries management - iOS optimized
-      const MAX_ENTRIES = window.navigator.userAgent.includes('iPhone') ? 10 : 50;
-      
+      // ===== Entries management - Unlimited items, smart storage
       const readEntries = () => {
         try {
           const stored = localStorage.getItem(LS_KEYS.entries);
           if (!stored) return [];
-          const entries = JSON.parse(stored);
-          return entries.slice(0, MAX_ENTRIES); // Limit entries for iPhone
+          return JSON.parse(stored);
         } catch (e) {
           console.warn('Failed to read entries:', e);
           return [];
@@ -464,17 +467,16 @@
       
       const writeEntries = (arr) => {
         try {
-          // Save only text data to localStorage (no images)
+          // Save only text data to localStorage (no images at all)
           const textOnlyArr = arr.map((item, index) => ({
             lokasi: item.lokasi,
             ulasan: item.ulasan,
-            hasImage: !!item.img, // Just flag if image exists
-            imageId: item.imageId || `img_${Date.now()}_${index}`,
+            hasImage: !!item.fullImage,
+            imageId: item.imageId,
             ts: item.ts
           }));
           
-          const limitedArr = textOnlyArr.slice(0, MAX_ENTRIES);
-          localStorage.setItem(LS_KEYS.entries, JSON.stringify(limitedArr));
+          localStorage.setItem(LS_KEYS.entries, JSON.stringify(textOnlyArr));
         } catch (e) {
           console.error('Failed to write entries:', e);
           showToast("Gagal simpan data.");
@@ -492,25 +494,25 @@
           return;
         }
         
-        // Show iPhone limits warning
-        if (window.navigator.userAgent.includes('iPhone')) {
-          const warningRow = document.createElement("tr");
-          warningRow.innerHTML = `<td colspan="4" style="background: #0f1a31; color: var(--muted); text-align: center; font-size: 0.8rem; padding: 8px;">
-            📱 iPhone: ${items.length}/10 items. Gambar hanya ditunjukkan dalam PDF untuk jimat memory.
-          </td>`;
-          body.appendChild(warningRow);
-        }
+        // Show info footer
+        const infoRow = document.createElement("tr");
+        infoRow.innerHTML = `<td colspan="4" style="background: #0f1a31; color: var(--muted); text-align: center; font-size: 0.8rem; padding: 8px;">
+          📊 Jumlah: ${items.length} item${items.length > 1 ? 's' : ''}. Tiada had bilangan untuk site visit.
+        </td>`;
+        body.appendChild(infoRow);
         
         items.forEach((it, idx) => {
           const tr = document.createElement("tr");
           
-          // Gambar - Show text only, not actual image
+          // Gambar - Show small thumbnail if available
           const tImg = document.createElement("td");
-          if (it.hasImage) {
-            tImg.innerHTML = `<div style="background: #0f1a31; padding: 20px; border-radius: 8px; text-align: center;">
-              <div style="font-size: 24px; margin-bottom: 8px;">📷</div>
-              <div style="font-size: 0.85rem; color: var(--muted);">Gambar ${idx + 1}</div>
-              <div style="font-size: 0.75rem; color: var(--muted); margin-top: 4px;">(akan muncul dalam PDF)</div>
+          if (it.hasImage && it.imageId && thumbImages.has(it.imageId)) {
+            const thumbSrc = thumbImages.get(it.imageId);
+            tImg.innerHTML = `<img src="${thumbSrc}" alt="Gambar ${idx + 1}" style="max-width: 80px; max-height: 80px; border-radius: 4px; object-fit: cover;">`;
+          } else if (it.hasImage) {
+            tImg.innerHTML = `<div style="background: #0f1a31; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 20px; margin-bottom: 4px;">📷</div>
+              <div style="font-size: 0.75rem; color: var(--muted);">Gambar ${idx + 1}</div>
             </div>`;
           } else {
             tImg.innerHTML = '<span class="tmuted">(tiada gambar)</span>';
@@ -538,9 +540,10 @@
           del.onclick = () => {
             if (confirm("Padam item ini?")) {
               const a = readEntries();
-              // Also remove from temp images
+              // Remove from temp storage
               if (a[idx] && a[idx].imageId) {
                 tempImages.delete(a[idx].imageId);
+                thumbImages.delete(a[idx].imageId);
               }
               a.splice(idx, 1);
               writeEntries(a);
@@ -555,59 +558,49 @@
         });
       };
 
-      // Save item - Store image temporarily, display text only
+      // Save item - Unlimited items with smart image storage
       $("btnSimpanData").addEventListener("click", () => {
         const lokasi = $("lokasi").value.trim();
         const ulasan = $("ulasan").value.trim();
-        const img = state.imgData || "";
+        const fullImage = state.imgData || "";
+        const thumbnail = state.thumbData || "";
         
-        if (!lokasi && !ulasan && !img) {
+        if (!lokasi && !ulasan && !fullImage) {
           showToast("Tiada apa untuk disimpan");
           return;
         }
         
         const arr = readEntries();
-        
-        // Check limits for iPhone
-        if (window.navigator.userAgent.includes('iPhone') && arr.length >= 10) {
-          alert("Had iPhone: Maksimum 10 item sahaja. Sila hantar PDF atau padam item lama.");
-          return;
-        }
-        
-        // Generate unique image ID
         const imageId = `img_${Date.now()}_${arr.length}`;
         
-        // Store image temporarily in memory (not localStorage)
-        if (img) {
-          tempImages.set(imageId, img);
+        // Store images in memory maps
+        if (fullImage) {
+          tempImages.set(imageId, fullImage); // Full image for PDF
+          thumbImages.set(imageId, thumbnail); // Small thumbnail for preview
         }
         
-        // Add item with image reference only
+        // Add item with reference only
         arr.push({ 
           lokasi, 
           ulasan, 
-          img, // Keep for compatibility but won't be stored
-          hasImage: !!img,
+          fullImage, // Keep for compatibility
+          hasImage: !!fullImage,
           imageId: imageId,
           ts: Date.now() 
         });
         
         writeEntries(arr);
         refreshTable();
-        showToast("Item ditambah (gambar disimpan sementara)");
+        showToast(`Item ${arr.length} ditambah`);
         
         // Clear inputs
         $("lokasi").value = "";
         $("ulasan").value = "";
         state.imgData = "";
+        state.thumbData = "";
         $("preview").style.display = "none";
         $("fileCamera").value = "";
         $("fileGallery").value = "";
-        
-        // iPhone memory info
-        if (window.navigator.userAgent.includes('iPhone') && arr.length > 5) {
-          showToast(`${arr.length}/10 items. Gambar akan muncul dalam PDF.`);
-        }
       });
 
       // Clear inputs
@@ -615,6 +608,7 @@
         $("lokasi").value = "";
         $("ulasan").value = "";
         state.imgData = "";
+        state.thumbData = "";
         $("preview").style.display = "none";
         $("fileCamera").value = "";
         $("fileGallery").value = "";
@@ -781,6 +775,7 @@
         // Generate PDF content
         drawHeader();
         
+        // Draw all items with their images from temporary storage
         for (let i = 0; i < items.length; i++) {
           await drawItem(items[i], i);
         }
@@ -857,8 +852,9 @@
         localStorage.removeItem(LS_KEYS.entries);
         localStorage.removeItem(LS_KEYS.form);
         
-        // Clear temporary images
+        // Clear temporary storage
         tempImages.clear();
+        thumbImages.clear();
         
         // Reset form
         Object.values(formEls).forEach((el) => (el.value = ""));
@@ -870,11 +866,12 @@
         // Reset inputs
         ["lokasi", "ulasan"].forEach((id) => ($(id).value = ""));
         state.imgData = "";
+        state.thumbData = "";
         $("preview").style.display = "none";
         $("fileCamera").value = "";
         $("fileGallery").value = "";
         
-        showToast("Selesai! Data telah dibersihkan.");
+        showToast("PDF dihantar! Data dibersihkan.");
       });
 
       // ===== Mobile viewport handling
