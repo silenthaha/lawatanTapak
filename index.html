@@ -294,6 +294,17 @@
         outline: 2px solid var(--accent);
         outline-offset: 2px;
       }
+      
+      /* iOS specific warning */
+      .ios-warning {
+        background: rgba(255, 204, 102, 0.15);
+        border: 1px solid var(--warn);
+        border-radius: 8px;
+        padding: 10px;
+        margin: 10px 0;
+        font-size: 0.8rem;
+        color: var(--warn);
+      }
     </style>
   </head>
   <body class="no-zoom">
@@ -362,6 +373,11 @@
           <div>
             <label>Gambar (pilih Kamera atau Galeri)</label>
             <div id="deviceInfo" style="font-size: 0.75rem; color: var(--muted); margin-bottom: 8px;"></div>
+            
+            <div id="iosWarning" class="ios-warning" style="display: none;">
+              <strong>Tips untuk iPhone:</strong> Tutup aplikasi lain untuk meningkatkan memori dan membolehkan lebih banyak gambar.
+            </div>
+            
             <div class="btnbar">
               <input
                 id="fileCamera"
@@ -508,18 +524,61 @@
       };
 
       // ===== Enhanced image handling with fallback
-      const MAX_WIDTH = isLowMemoryDevice() ? 800 : 1200; // Smaller for low memory
-      const MAX_IMAGES = isLowMemoryDevice() ? 1 : 10; // Single image for iOS/low memory
-      const JPEG_QUALITY = isLowMemoryDevice() ? 0.7 : 0.85; // Lower quality for iOS
+      // UPDATED: Increased iOS limits
+      const MAX_WIDTH = isLowMemoryDevice() ? 1000 : 1200; // Increased for iOS
+      const MAX_IMAGES = isLowMemoryDevice() ? 5 : 10; // Increased from 1 to 5 for iOS
+      const JPEG_QUALITY = isLowMemoryDevice() ? 0.6 : 0.85; // Adjusted for iOS
       
       const state = { images: [] };
       
+      // Function to free up memory by reducing image quality further if needed
+      const optimizeImageForIOS = (dataUrl, targetSizeKB = 500) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Calculate dimensions
+            let width = img.width;
+            let height = img.height;
+            let quality = 0.6; // Start with lower quality
+            
+            // If still too big after initial compression, reduce dimensions
+            const estimatedSize = (width * height * 3) / 1024; // Rough estimate in KB
+            if (estimatedSize > targetSizeKB * 2) {
+              const scale = Math.sqrt((targetSizeKB * 1024) / (width * height * 3));
+              width = Math.floor(width * scale);
+              height = Math.floor(height * scale);
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Try different quality levels if needed
+            let result = canvas.toDataURL('image/jpeg', quality);
+            
+            // Check if we need to reduce quality further
+            while (result.length > targetSizeKB * 1024 && quality > 0.3) {
+              quality -= 0.1;
+              result = canvas.toDataURL('image/jpeg', quality);
+            }
+            
+            resolve(result);
+          };
+          img.onerror = () => resolve(dataUrl); // Fallback to original if optimization fails
+          img.src = dataUrl;
+        });
+      };
+
       const fileToDataURL = (file) =>
         new Promise((resolve, reject) => {
           const img = new Image();
           const fr = new FileReader();
-          fr.onload = () => {
-            img.onload = () => {
+          fr.onload = async () => {
+            img.onload = async () => {
               const scale = Math.min(
                 1,
                 MAX_WIDTH / (img.naturalWidth || MAX_WIDTH)
@@ -538,7 +597,14 @@
               }
               
               ctx.drawImage(img, 0, 0, w, h);
-              resolve(cv.toDataURL("image/jpeg", JPEG_QUALITY));
+              let dataUrl = cv.toDataURL("image/jpeg", JPEG_QUALITY);
+              
+              // Additional optimization for iOS
+              if (isIOS()) {
+                dataUrl = await optimizeImageForIOS(dataUrl, 400);
+              }
+              
+              resolve(dataUrl);
             };
             img.onerror = reject;
             img.src = fr.result;
@@ -607,12 +673,30 @@
             state.images.splice(index, 1);
             updateImagePreview();
             showToast("Gambar dipadamkan");
+            
+            // Force garbage collection for iOS
+            if (isIOS()) {
+              setTimeout(() => {
+                try {
+                  if (window.gc) window.gc();
+                } catch (e) {}
+              }, 100);
+            }
           };
           
           imgWrapper.appendChild(img);
           imgWrapper.appendChild(removeBtn);
           preview.appendChild(imgWrapper);
         });
+        
+        // Update image count display
+        const imageCount = document.getElementById('imageCount') || document.createElement('div');
+        if (!document.getElementById('imageCount')) {
+          imageCount.id = 'imageCount';
+          imageCount.style.cssText = 'font-size: 0.8rem; color: var(--muted); margin-top: 8px;';
+          container.appendChild(imageCount);
+        }
+        imageCount.textContent = `${state.images.length}/${MAX_IMAGES} gambar ditambah`;
       };
 
       // Setup device-specific input attributes and info
@@ -620,13 +704,20 @@
         const deviceInfo = $("deviceInfo");
         const cameraInput = $("fileCamera");
         const galleryInput = $("fileGallery");
+        const iosWarning = $("iosWarning");
         
         if (isLowMemoryDevice()) {
-          deviceInfo.textContent = "📱 Mode iPhone/Low Memory: 1 gambar sahaja, kualiti dioptimumkan";
+          deviceInfo.textContent = `📱 Mode ${isIOS() ? 'iPhone' : 'Low Memory'}: Sehingga ${MAX_IMAGES} gambar, kualiti dioptimumkan`;
           deviceInfo.style.color = "var(--warn)";
-          // Single image mode for low memory devices
-          cameraInput.removeAttribute("multiple");
-          galleryInput.removeAttribute("multiple");
+          
+          // Show iOS specific warning
+          if (isIOS()) {
+            iosWarning.style.display = 'block';
+          }
+          
+          // Multiple images for iOS with increased limit
+          cameraInput.setAttribute("multiple", "");
+          galleryInput.setAttribute("multiple", "");
         } else {
           deviceInfo.textContent = "📱 Mode Android/High Memory: Sehingga 10 gambar, kualiti tinggi";
           deviceInfo.style.color = "var(--ok)";
@@ -652,13 +743,8 @@
         showToast("Memproses gambar...");
         
         try {
-          // For low memory devices, only process the first file
-          const filesToProcess = isLowMemoryDevice() ? [files[0]] : Array.from(files);
-          
-          // Clear existing images for low memory devices to save memory
-          if (isLowMemoryDevice()) {
-            state.images = [];
-          }
+          // For iOS, we can now process more than one file
+          const filesToProcess = isLowMemoryDevice() ? Array.from(files).slice(0, MAX_IMAGES - state.images.length) : Array.from(files);
           
           for (const file of filesToProcess) {
             if (state.images.length >= MAX_IMAGES) {
@@ -667,9 +753,9 @@
             }
             
             // Check file size (limit for low memory devices)
-            const maxFileSize = isLowMemoryDevice() ? 5 * 1024 * 1024 : 10 * 1024 * 1024; // 5MB vs 10MB
+            const maxFileSize = isLowMemoryDevice() ? 8 * 1024 * 1024 : 10 * 1024 * 1024; // 8MB vs 10MB
             if (file.size > maxFileSize) {
-              showToast(`Gambar terlalu besar. Max ${isLowMemoryDevice() ? '5MB' : '10MB'}`);
+              showToast(`Gambar terlalu besar. Max ${isLowMemoryDevice() ? '8MB' : '10MB'}`);
               continue;
             }
             
@@ -678,8 +764,12 @@
               state.images.push(url);
               
               // Force garbage collection hint for iOS
-              if (isLowMemoryDevice() && window.gc) {
-                window.gc();
+              if (isLowMemoryDevice()) {
+                setTimeout(() => {
+                  try {
+                    if (window.gc) window.gc();
+                  } catch (e) {}
+                }, 100);
               }
               
             } catch (e) {
@@ -691,7 +781,7 @@
           updateImagePreview();
           
           if (isLowMemoryDevice()) {
-            showToast("Gambar ditambah (mode memory-optimized)");
+            showToast(`Gambar ditambah (${state.images.length}/${MAX_IMAGES})`);
           } else {
             showToast(`${filesToProcess.length} gambar ditambah`);
           }
@@ -717,6 +807,15 @@
         state.images = [];
         updateImagePreview();
         showToast("Semua gambar dikosongkan");
+        
+        // Force garbage collection for iOS
+        if (isIOS()) {
+          setTimeout(() => {
+            try {
+              if (window.gc) window.gc();
+            } catch (e) {}
+          }, 100);
+        }
       });
 
       // ===== Entries (lokasi, ulasan, img)
@@ -778,6 +877,15 @@
               writeEntries(a);
               refreshTable();
               showToast("Item dipadamkan");
+              
+              // Force garbage collection for iOS
+              if (isIOS()) {
+                setTimeout(() => {
+                  try {
+                    if (window.gc) window.gc();
+                  } catch (e) {}
+                }, 100);
+              }
             }
           };
           tAct.appendChild(del);
@@ -817,6 +925,17 @@
         // Reset form - clear lokasi and ulasan but keep images for next entry
         $("lokasi").value = "";
         $("ulasan").value = "";
+        state.images = [];
+        updateImagePreview();
+        
+        // Force garbage collection for iOS
+        if (isIOS()) {
+          setTimeout(() => {
+            try {
+              if (window.gc) window.gc();
+            } catch (e) {}
+          }, 100);
+        }
       });
 
       $("btnClear").addEventListener("click", () => {
@@ -827,6 +946,15 @@
         $("fileCamera").value = "";
         $("fileGallery").value = "";
         showToast("Borang dikosongkan");
+        
+        // Force garbage collection for iOS
+        if (isIOS()) {
+          setTimeout(() => {
+            try {
+              if (window.gc) window.gc();
+            } catch (e) {}
+          }, 100);
+        }
       });
 
       // ===== PDF builder (updated for multiple images)
