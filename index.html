@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- jsPDF -->
+    <!-- jsPDF (pilihan). Jika tiada internet/CDN disekat, fallback ke cetak HTML -->
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <style>
       :root {
@@ -33,6 +33,13 @@
       html,
       body {
         height: 100%;
+        touch-action: manipulation; /* iOS 13+ hormat ini */
+      }
+      button,
+      a,
+      input,
+      textarea {
+        touch-action: manipulation;
       }
       body {
         margin: 0;
@@ -73,7 +80,6 @@
           grid-template-columns: 1fr 1fr;
         }
       }
-
       label {
         font-size: 0.85rem;
         color: var(--muted);
@@ -148,24 +154,17 @@
         width: 100%;
         border-collapse: collapse;
         font-size: 0.92rem;
-        margin-top: 16px;
       }
       .table th,
       .table td {
         border: 1px solid var(--border);
-        padding: 12px;
+        padding: 10px;
         vertical-align: top;
       }
       .table th {
         background: #0f1a31;
         position: sticky;
         top: 0;
-      }
-      .table td img {
-        max-width: 100%;
-        max-height: 150px;
-        border-radius: 8px;
-        object-fit: cover;
       }
       .tmuted {
         color: var(--muted);
@@ -183,58 +182,27 @@
         display: none;
         z-index: 5;
       }
-      .sticky-footer {
-        position: sticky;
+      /* .sticky-footer {
+        position: fixed;
         bottom: 0;
-        padding-top: 8px;
+        padding: 8px;
         background: linear-gradient(
           180deg,
           rgba(11, 18, 32, 0) 0%,
           rgba(11, 18, 32, 0.85) 20%,
           rgba(11, 18, 32, 1) 60%
         );
-      }
+      } */
       .btn-ghost {
         background: transparent;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         padding: 6px 10px;
       }
-      
-      /* Multiple image preview styles */
-      .image-preview-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 8px;
+      .note {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 12px;
       }
-      .image-preview-item {
-        position: relative;
-        width: 80px;
-        height: 80px;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-      .image-preview-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .image-preview-item button {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: var(--danger);
-        color: white;
-        font-size: 12px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
       @media print {
         #section4,
         .toast {
@@ -251,10 +219,11 @@
     <div class="wrap">
       <h1>📋 Laporan Lawatan Tapak</h1>
       <div class="subtitle">
-        Data kekal sehingga anda tekan <b>Simpan & Hantar</b>.
+        Borang mudah alih untuk laporan lawatan tapak. Data akan disimpan secara
+        tempatan.
       </div>
 
-      <!-- SECTION 1: Maklumat Asas -->
+      <!-- SECTION 1 -->
       <div class="card" id="section1">
         <h2>Maklumat Asas</h2>
         <div class="row cols-2">
@@ -270,7 +239,7 @@
             <label>Perkara *</label>
             <input
               id="perkara"
-              placeholder="cth: Khidmat Nasihat Cadangan Penggantian PABX"
+              placeholder="cth: Khidmat Nasihat Cadangan Penggantian PABX ..."
               required
             />
           </div>
@@ -295,9 +264,12 @@
             />
           </div>
         </div>
+        <p class="note">
+          Medan bertanda * adalah wajib. Data akan disimpan secara automatik.
+        </p>
       </div>
 
-      <!-- SECTION 2: Input Item -->
+      <!-- SECTION 2 (Item input) -->
       <div class="card" id="section2">
         <h2>Butiran Lokasi</h2>
         <div class="row">
@@ -315,41 +287,45 @@
                 accept="image/*"
                 capture="environment"
                 hidden
-                multiple
               />
-              <input id="fileGallery" type="file" accept="image/*" hidden multiple />
+              <input id="fileGallery" type="file" accept="image/*" hidden />
               <button id="btnKamera" class="primary">📷 Kamera</button>
               <button id="btnGaleri" class="primary">🖼️ Galeri</button>
             </div>
-            
-            <div id="imagePreviewContainer" class="image-preview-container" style="display: none;"></div>
+            <img
+              id="preview"
+              class="thumb"
+              alt="Pratonton"
+              style="display: none; margin-top: 8px"
+            />
           </div>
 
           <div>
             <label>Ulasan (bullet atau baris baharu)</label>
             <textarea
               id="ulasan"
-              placeholder="• Kabel network UTP 6A&#10;• Tray fiber rapi"
+              placeholder="• Kabel network UTP 6A...&#10;• Tray fiber rapi..."
             ></textarea>
           </div>
         </div>
 
         <div class="btnbar" style="margin-top: 8px">
           <button class="ok" id="btnSimpanData">Simpan Item</button>
-          <button class="warn" id="btnClear">Reset</button>
+          <button class="warn" id="btnClear">Set Semula</button>
         </div>
       </div>
 
-      <!-- SECTION 3: Senarai Item -->
+      <!-- SECTION 3 (list) -->
       <div class="card" id="section3">
-        <h2>Senarai Item</h2>
+        <h2>Senarai Item Disimpan</h2>
+        <div id="entriesWrap"></div>
         <table class="table" id="entriesTable">
           <thead>
             <tr>
-              <th style="width: 35%">Gambar</th>
+              <th style="width: 25%">Gambar</th>
               <th style="width: 20%">Lokasi</th>
-              <th style="width: 35%">Ulasan</th>
-              <th style="width: 10%">Aksi</th>
+              <th style="width: 45%">Ulasan</th>
+              <th style="width: 10%">Tindakan</th>
             </tr>
           </thead>
           <tbody id="entriesBody">
@@ -359,11 +335,10 @@
           </tbody>
         </table>
       </div>
-
-      <!-- SECTION 4: Submit -->
-      <div class="card sticky-footer" id="section4">
+      <!-- SECTION 4 (only Simpan & Hantar) -->
+      <div class="card" id="section4">
         <div class="btnbar">
-          <button id="btnSubmit" class="danger">📄 Simpan & Hantar PDF</button>
+          <button id="btnSubmit" class="danger">Simpan & Hantar</button>
         </div>
       </div>
     </div>
@@ -371,7 +346,7 @@
     <div class="toast" id="toast">Berjaya disimpan.</div>
 
     <script>
-      // ===== Utility functions
+      // ===== Util asas
       const $ = (id) => document.getElementById(id);
       const showToast = (msg) => {
         const t = $("toast");
@@ -381,11 +356,11 @@
       };
       const todayISO = () => new Date().toISOString().slice(0, 10);
       const LS_KEYS = {
-        form: "laporan_form_v6",
-        entries: "laporan_entries_v6",
+        form: "laporan_form_v4",
+        entries: "laporan_entries_v4",
       };
 
-      // ===== Form autosave
+      // ===== Autosave form
       const formEls = {
         namaProjek: $("namaProjek"),
         perkara: $("perkara"),
@@ -393,7 +368,6 @@
         namaBangunan: $("namaBangunan"),
         email: $("email"),
       };
-      
       const loadForm = () => {
         try {
           const d = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
@@ -403,56 +377,34 @@
           if (!formEls.tarikh.value) formEls.tarikh.value = todayISO();
         } catch (e) {}
       };
-      
       const saveForm = () => {
         const d = {};
         Object.entries(formEls).forEach(([k, el]) => (d[k] = el.value.trim()));
         localStorage.setItem(LS_KEYS.form, JSON.stringify(d));
       };
-      
       Object.values(formEls).forEach((el) =>
         el.addEventListener("input", saveForm)
       );
 
-      // ===== Image handling - Unlimited images with thumbnails
-      const MAX_WIDTH = 1200; // For PDF
-      const THUMB_WIDTH = 150; // For preview
-      const tempImages = new Map(); // Full images for PDF
-      const thumbImages = new Map(); // Small thumbnails for preview
-      
+      // ===== Gambar (kamera / galeri)
+      const MAX_WIDTH = 1200;
       const fileToDataURL = (file) =>
         new Promise((resolve, reject) => {
           const img = new Image();
           const fr = new FileReader();
           fr.onload = () => {
             img.onload = () => {
-              // Create full size image for PDF (1200px)
-              const scale = Math.min(1, MAX_WIDTH / (img.naturalWidth || MAX_WIDTH));
-              const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale);
-              const h = Math.round((img.naturalHeight || MAX_WIDTH * 0.66) * scale);
-              
+              const scale = Math.min(
+                1,
+                MAX_WIDTH / (img.naturalWidth || MAX_WIDTH)
+              );
+              const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale),
+                h = Math.round((img.naturalHeight || MAX_WIDTH * 0.66) * scale);
               const cv = document.createElement("canvas");
               cv.width = w;
               cv.height = h;
-              const ctx = cv.getContext("2d");
-              ctx.drawImage(img, 0, 0, w, h);
-              
-              const fullImage = cv.toDataURL("image/jpeg", 0.85);
-              
-              // Create small thumbnail for preview
-              const thumbScale = Math.min(1, THUMB_WIDTH / (img.naturalWidth || THUMB_WIDTH));
-              const thumbW = Math.round((img.naturalWidth || THUMB_WIDTH) * thumbScale);
-              const thumbH = Math.round((img.naturalHeight || THUMB_WIDTH * 0.66) * thumbScale);
-              
-              const thumbCanvas = document.createElement("canvas");
-              thumbCanvas.width = thumbW;
-              thumbCanvas.height = thumbH;
-              const thumbCtx = thumbCanvas.getContext("2d");
-              thumbCtx.drawImage(img, 0, 0, thumbW, thumbH);
-              
-              const thumbnail = thumbCanvas.toDataURL("image/jpeg", 0.7);
-              
-              resolve({ fullImage, thumbnail });
+              cv.getContext("2d").drawImage(img, 0, 0, w, h);
+              resolve(cv.toDataURL("image/jpeg", 0.92));
             };
             img.onerror = reject;
             img.src = fr.result;
@@ -461,280 +413,141 @@
           fr.readAsDataURL(file);
         });
 
-      // State for current images
-      const currentImages = [];
-      
-      // Setup camera and gallery buttons
+      const state = { imgData: "" };
       $("btnKamera").addEventListener("click", () => $("fileCamera").click());
       $("btnGaleri").addEventListener("click", () => $("fileGallery").click());
-      
-      // Handle file selection
-      async function onFilesPicked(files) {
-        if (!files || files.length === 0) return;
-        
-        showToast("Memproses gambar...");
-        
-        // Process all selected files
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          try {
-            const { fullImage, thumbnail } = await fileToDataURL(file);
-            const imageId = `img_${Date.now()}_${i}`;
-            
-            // Store in current images array
-            currentImages.push({
-              imageId,
-              fullImage,
-              thumbnail
-            });
-            
-          } catch (e) {
-            console.error(e);
-            showToast("Gagal memproses beberapa gambar");
-          }
+      async function onFilePicked(file) {
+        if (!file) return;
+        try {
+          const url = await fileToDataURL(file);
+          state.imgData = url;
+          const p = $("preview");
+          p.src = url;
+          p.style.display = "block";
+        } catch (e) {
+          console.error(e);
+          showToast("Gagal baca gambar");
         }
-        
-        updateImagePreview();
-        showToast(`${files.length} gambar ditambah`);
       }
-      
-      // Update image preview
-      function updateImagePreview() {
-        const container = $("imagePreviewContainer");
-        container.innerHTML = "";
-        
-        if (currentImages.length === 0) {
-          container.style.display = "none";
-          return;
-        }
-        
-        container.style.display = "flex";
-        
-        currentImages.forEach((image, index) => {
-          const previewItem = document.createElement("div");
-          previewItem.className = "image-preview-item";
-          
-          const img = document.createElement("img");
-          img.src = image.thumbnail;
-          img.alt = `Gambar ${index + 1}`;
-          
-          const removeBtn = document.createElement("button");
-          removeBtn.textContent = "×";
-          removeBtn.title = "Buang gambar";
-          removeBtn.onclick = (e) => {
-            e.preventDefault();
-            currentImages.splice(index, 1);
-            updateImagePreview();
-            showToast("Gambar dibuang");
-          };
-          
-          previewItem.appendChild(img);
-          previewItem.appendChild(removeBtn);
-          container.appendChild(previewItem);
-        });
-      }
-      
-      // Setup file input event listeners
-      $("fileCamera").addEventListener("change", (e) => {
-        onFilesPicked(e.target.files);
-        e.target.value = ""; // Reset input
-      });
-      
-      $("fileGallery").addEventListener("change", (e) => {
-        onFilesPicked(e.target.files);
-        e.target.value = ""; // Reset input
-      });
+      $("fileCamera").addEventListener("change", (e) =>
+        onFilePicked(e.target.files?.[0])
+      );
+      $("fileGallery").addEventListener("change", (e) =>
+        onFilePicked(e.target.files?.[0])
+      );
 
-      // ===== Entries management - Unlimited items with images
+      // ===== Entries (lokasi, ulasan, img)
       const readEntries = () => {
         try {
-          const stored = localStorage.getItem(LS_KEYS.entries);
-          if (!stored) return [];
-          return JSON.parse(stored);
+          return JSON.parse(localStorage.getItem(LS_KEYS.entries) || "[]");
         } catch (e) {
-          console.warn('Failed to read entries:', e);
           return [];
         }
       };
-      
-      const writeEntries = (arr) => {
-        try {
-          localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
-        } catch (e) {
-          console.error('Failed to write entries:', e);
-          showToast("Gagal simpan data.");
-        }
-      };
-        
+      const writeEntries = (arr) =>
+        localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
       const refreshTable = () => {
         const body = $("entriesBody");
         body.innerHTML = "";
         const items = readEntries();
-        
         if (items.length === 0) {
           body.innerHTML =
             '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>';
           return;
         }
-        
-        // Show info footer
-        const infoRow = document.createElement("tr");
-        infoRow.innerHTML = `<td colspan="4" style="background: #0f1a31; color: var(--muted); text-align: center; font-size: 0.8rem; padding: 8px;">
-          📊 Jumlah: ${items.length} item${items.length > 1 ? 's' : ''}. Tiada had bilangan gambar.
-        </td>`;
-        body.appendChild(infoRow);
-        
         items.forEach((it, idx) => {
           const tr = document.createElement("tr");
-          
-          // Gambar - Show thumbnails for all images
           const tImg = document.createElement("td");
-          if (it.images && it.images.length > 0) {
-            const imgContainer = document.createElement("div");
-            imgContainer.style.display = "flex";
-            imgContainer.style.flexWrap = "wrap";
-            imgContainer.style.gap = "4px";
-            
-            it.images.forEach((imgData, imgIdx) => {
-              const imgWrapper = document.createElement("div");
-              imgWrapper.style.position = "relative";
-              imgWrapper.style.width = "60px";
-              imgWrapper.style.height = "60px";
-              
-              const img = document.createElement("img");
-              img.src = imgData.thumbnail;
-              img.alt = `Gambar ${imgIdx + 1}`;
-              img.style.width = "100%";
-              img.style.height = "100%";
-              img.style.objectFit = "cover";
-              img.style.borderRadius = "4px";
-              
-              imgWrapper.appendChild(img);
-              imgContainer.appendChild(imgWrapper);
-            });
-            
-            tImg.appendChild(imgContainer);
-          } else {
-            tImg.innerHTML = '<span class="tmuted">(tiada gambar)</span>';
-          }
-          
-          // Lokasi
+          tImg.innerHTML = it.img
+            ? `<img src="${it.img}" style="max-width:100%; max-height:150px; border-radius:8px">`
+            : '<span class="tmuted">(tiada)</span>';
           const tLok = document.createElement("td");
-          tLok.textContent = it.lokasi || "-";
-          
-          // Ulasan
+          tLok.textContent = it.lokasi || "";
           const tUlas = document.createElement("td");
-          const ulasanFormatted = (it.ulasan || "")
-            .split('\n')
-            .filter(line => line.trim())
-            .map(line => line.replace(/^•\s*/, ''))
-            .map(line => `• ${line}`)
-            .join('<br>');
-          tUlas.innerHTML = ulasanFormatted || "-";
-          
-          // Aksi
+          tUlas.innerHTML = (it.ulasan || "").replace(/\n/g, "<br>");
           const tAct = document.createElement("td");
           const del = document.createElement("button");
-          del.className = "btn-ghost danger";
+          del.className = "btn-ghost";
           del.textContent = "Padam";
           del.onclick = () => {
-            if (confirm("Padam item ini?")) {
-              const a = readEntries();
-              a.splice(idx, 1);
-              writeEntries(a);
-              refreshTable();
-              showToast("Item dipadamkan");
-            }
+            const a = readEntries();
+            a.splice(idx, 1);
+            writeEntries(a);
+            refreshTable();
           };
           tAct.appendChild(del);
-          
           tr.append(tImg, tLok, tUlas, tAct);
           body.appendChild(tr);
         });
       };
 
-      // Save item - Unlimited items with images
       $("btnSimpanData").addEventListener("click", () => {
         const lokasi = $("lokasi").value.trim();
         const ulasan = $("ulasan").value.trim();
-        
-        if (!lokasi && !ulasan && currentImages.length === 0) {
+        const img = state.imgData || "";
+        if (!lokasi && !ulasan && !img) {
           showToast("Tiada apa untuk disimpan");
           return;
         }
-        
         const arr = readEntries();
-        
-        // Add item with all images
-        arr.push({ 
-          lokasi, 
-          ulasan, 
-          images: [...currentImages], // Store all current images
-          ts: Date.now() 
-        });
-        
+        arr.push({ lokasi, ulasan, img, ts: Date.now() });
         writeEntries(arr);
         refreshTable();
-        showToast(`Item ${arr.length} ditambah`);
-        
-        // Clear inputs
-        $("lokasi").value = "";
-        $("ulasan").value = "";
-        currentImages.length = 0;
-        updateImagePreview();
+        showToast("Item ditambah");
+
+        // Reset form
+        // $("lokasi").value = "";
+        // $("ulasan").value = "";
+        state.imgData = "";
+        $("preview").style.display = "none";
         $("fileCamera").value = "";
         $("fileGallery").value = "";
       });
 
-      // Clear inputs
       $("btnClear").addEventListener("click", () => {
         $("lokasi").value = "";
         $("ulasan").value = "";
-        currentImages.length = 0;
-        updateImagePreview();
+        state.imgData = "";
+        $("preview").style.display = "none";
         $("fileCamera").value = "";
         $("fileGallery").value = "";
       });
 
-      // ===== PDF Generation
+      // ===== PDF builder (ulang Maklumat Asas di setiap page, item: kiri gambar, kanan ulasan)
       async function buildPDF() {
         if (!window.jspdf || !window.jspdf.jsPDF)
           throw new Error("jsPDF not loaded");
-          
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
         const W = doc.internal.pageSize.getWidth();
         const H = doc.internal.pageSize.getHeight();
-        const M = 40;
+        const M = 36;
         let y = M;
 
         const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
         const items = readEntries();
 
+        function hRule() {
+          doc.setDrawColor(0);
+          doc.setLineWidth(0.6);
+          doc.line(M, y, W - M, y);
+        }
+
         function drawHeader() {
           y = M;
-          
-          // Title
+          // Tajuk
           doc.setFont("helvetica", "bold");
           doc.setFontSize(16);
-          doc.text("LAPORAN LAWATAN TAPAK", W / 2, y, { align: "center" });
-          y += 20;
-          
-          // Date generated
+          doc.text("LAPORAN  LAWATAN  TAPAK", W / 2, y, { align: "center" });
+          y += 16;
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(9);
-          const now = new Date();
-          const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
-          const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-          doc.text(`Dijana: ${dateStr}, ${timeStr}`, W / 2, y, { align: "center" });
-          y += 20;
+          doc.setFontSize(10);
+          doc.text(`Dijana: ${new Date().toLocaleString()}`, W / 2, y, {
+            align: "center",
+          });
+          y += 14;
 
-          // Maklumat Asas section
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(11);
-          doc.text("Maklumat Asas", M, y);
-          y += 15;
-          
+          // Jadual Maklumat Asas | Butiran
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
           const info = [
@@ -742,9 +555,9 @@
             [`Perkara:`, form.perkara || "-"],
             [`Tarikh:`, form.tarikh || "-"],
             [`Nama Bangunan:`, form.namaBangunan || "-"],
-            [`Email:`, form.email || "-"]
+            [`Email:`, form.email || "-"],
           ];
-          
+
           info.forEach(([label, value]) => {
             doc.setFont("helvetica", "bold");
             doc.text(label, M, y);
@@ -752,7 +565,7 @@
             doc.text(value, M + 80, y);
             y += 12;
           });
-          
+
           // Separator line
           y += 5;
           doc.setDrawColor(100);
@@ -762,15 +575,7 @@
         }
 
         async function drawItem(it, idx) {
-          const images = it.images || [];
-          const hasImages = images.length > 0;
-          
-          // Calculate needed height based on content
-          let minNeeded = 180; // Base height for text content
-          if (hasImages) {
-            minNeeded = 280; // Additional space for images
-          }
-          
+          const minNeeded = 280;
           if (y + minNeeded > H - M) {
             doc.addPage();
             drawHeader();
@@ -779,7 +584,7 @@
           const leftW = (W - M * 2) * 0.45;
           const rightW = (W - M * 2) * 0.55;
           const rightX = M + leftW + 10;
-          const itemH = hasImages ? 280 : 180;
+          const itemH = 200;
 
           // Item header
           doc.setFont("helvetica", "bold");
@@ -790,81 +595,62 @@
           // Create table-like structure with borders
           doc.setDrawColor(0);
           doc.setLineWidth(0.8);
-          
-          // Left box for image(s)
+
+          // Left box for image
           doc.rect(M, y, leftW, itemH);
-          
+
           // Right box for comments
           doc.rect(rightX, y, rightW, itemH);
 
-          // Add images if available
-          if (hasImages) {
+          // Add image
+          if (it.img) {
             try {
-              // Calculate image dimensions
-              const imgAreaWidth = leftW - 20;
-              const imgAreaHeight = itemH - 20;
-              
-              if (images.length === 1) {
-                // Single image - use full space
-                const imgData = images[0].fullImage;
-                const dim = await new Promise((res) => {
-                  const im = new Image();
-                  im.onload = () =>
-                    res({ w: im.naturalWidth || 1200, h: im.naturalHeight || 800 });
-                  im.onerror = () => res({ w: 1200, h: 800 });
-                  im.src = imgData;
-                });
-                
-                const ratio = dim.h / dim.w;
-                let imgW = imgAreaWidth;
-                let imgH = imgAreaWidth * ratio;
-                
-                if (imgH > imgAreaHeight) {
-                  imgH = imgAreaHeight;
-                  imgW = imgAreaHeight / ratio;
-                }
-                
-                const imgX = M + 10 + (imgAreaWidth - imgW) / 2;
-                const imgY = y + 10 + (imgAreaHeight - imgH) / 2;
-                
-                doc.addImage(imgData, "JPEG", imgX, imgY, imgW, imgH, undefined, "FAST");
-              } else {
-                // Multiple images - arrange in grid
-                const cols = 2;
-                const rows = Math.ceil(images.length / cols);
-                const cellWidth = (imgAreaWidth - 5) / cols;
-                const cellHeight = (imgAreaHeight - 5) / rows;
-                
-                for (let i = 0; i < Math.min(images.length, 6); i++) {
-                  const imgData = images[i].fullImage;
-                  const col = i % cols;
-                  const row = Math.floor(i / cols);
-                  
-                  const imgX = M + 10 + col * (cellWidth + 5);
-                  const imgY = y + 10 + row * (cellHeight + 5);
-                  
-                  // Add image with fixed cell size
-                  doc.addImage(imgData, "JPEG", imgX, imgY, cellWidth, cellHeight, undefined, "FAST");
-                }
-                
-                // Show indicator if there are more than 6 images
-                if (images.length > 6) {
-                  doc.setFont("helvetica", "italic");
-                  doc.setFontSize(8);
-                  doc.text(
-                    `+${images.length - 6} lagi gambar`,
-                    M + leftW / 2,
-                    y + itemH - 10,
-                    { align: "center" }
-                  );
-                }
+              const dim = await new Promise((res) => {
+                const im = new Image();
+                im.onload = () =>
+                  res({
+                    w: im.naturalWidth || 1200,
+                    h: im.naturalHeight || 800,
+                  });
+                im.onerror = () => res({ w: 1200, h: 800 });
+                im.src = it.img;
+              });
+
+              const ratio = dim.h / dim.w;
+              const maxW = leftW - 10;
+              const maxH = itemH - 10;
+              let imgW = maxW;
+              let imgH = maxW * ratio;
+
+              if (imgH > maxH) {
+                imgH = maxH;
+                imgW = maxH / ratio;
               }
+
+              const imgX = M + 5 + (maxW - imgW) / 2;
+              const imgY = y + 5 + (maxH - imgH) / 2;
+
+              doc.addImage(
+                it.img,
+                "JPEG",
+                imgX,
+                imgY,
+                imgW,
+                imgH,
+                undefined,
+                "FAST"
+              );
             } catch (e) {
               doc.setFont("helvetica", "italic");
               doc.setFontSize(10);
-              doc.text("(gambar tidak dapat dimuatkan)", M + leftW / 2, y + itemH / 2, {
-                align: "center",
-              });
+              doc.text(
+                "(gambar tidak dapat dimuatkan)",
+                M + leftW / 2,
+                y + itemH / 2,
+                {
+                  align: "center",
+                }
+              );
             }
           } else {
             doc.setFont("helvetica", "italic");
@@ -878,16 +664,19 @@
           doc.setFont("helvetica", "bold");
           doc.setFontSize(10);
           doc.text("Ulasan:", rightX + 8, y + 15);
-          
+
           // Add comments content
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
           if (it.ulasan) {
             const bullets = it.ulasan
               .split(/\n+/)
-              .filter(line => line.trim())
+              .filter((line) => line.trim())
               .map((s) => "• " + s.replace(/^•\s*/, ""));
-            const wrapped = doc.splitTextToSize(bullets.join("\n"), rightW - 16);
+            const wrapped = doc.splitTextToSize(
+              bullets.join("\n"),
+              rightW - 16
+            );
             doc.text(wrapped, rightX + 8, y + 30);
           } else {
             doc.setFont("helvetica", "italic");
@@ -897,10 +686,8 @@
           y += itemH + 15;
         }
 
-        // Generate PDF content
+        // Header mula
         drawHeader();
-        
-        // Draw all items with their images
         for (let i = 0; i < items.length; i++) {
           await drawItem(items[i], i);
         }
@@ -908,35 +695,29 @@
         return doc;
       }
 
-      // ===== Share/Download PDF
       async function shareOrPrint() {
         const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const fname = `LaporanTapak_${(form.namaProjek || "projek")
-          .replace(/\s+/g, "_")
-          .replace(/[^\w\-]/g, "")}_${todayISO()}.pdf`;
-          
+        const fname = `LaporanTapak_${(form.namaProjek || "projek").replace(
+          /\s+/g,
+          "_"
+        )}_${todayISO()}.pdf`;
         try {
           if (window.jspdf && window.jspdf.jsPDF) {
-            showToast("Sedang menjana PDF...");
             const doc = await buildPDF();
             const blob = doc.output("blob");
             const file = new File([blob], fname, { type: "application/pdf" });
-            
-            // Try Web Share API first
             if (
               navigator.share &&
               navigator.canShare &&
               navigator.canShare({ files: [file] })
             ) {
               await navigator.share({
-                title: "Laporan Lawatan Tapak",
+                title: "Laporan Tapak",
                 text: `Laporan: ${form.namaProjek || ""}`,
                 files: [file],
               });
               return;
             }
-            
-            // Fallback to download
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
@@ -945,93 +726,178 @@
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            showToast("PDF berjaya dimuat turun!");
             return;
           }
         } catch (e) {
-          console.error("PDF generation failed:", e);
-          showToast("Gagal menjana PDF. Cuba lagi.");
+          console.warn(e);
         }
+        openPrintView(); // fallback HTML print
       }
 
-      // ===== Submit
+      // Submit sahaja di Section 4
       $("btnSubmit").addEventListener("click", async () => {
         const required = ["namaProjek", "perkara", "tarikh", "email"];
         for (const k of required) {
           if (!formEls[k].value.trim()) {
-            alert("Sila lengkapkan semua medan wajib (bertanda *).");
-            formEls[k].focus();
+            alert("Sila lengkapkan semua medan wajib di Bahagian 1.");
             return;
           }
         }
-        
+
         const items = readEntries();
         if (items.length === 0) {
-          alert("Sila tambah sekurang-kurangnya satu item lokasi.");
+          alert(
+            "Sila tambah sekurang-kurangnya satu item lokasi di Bahagian 2."
+          );
           return;
         }
-        
+
         await shareOrPrint();
-        
-        // Clear all data after successful submission
+        // bersih data
         localStorage.removeItem(LS_KEYS.entries);
         localStorage.removeItem(LS_KEYS.form);
-        
-        // Reset form
-        Object.values(formEls).forEach((el) => (el.value = ""));
-        formEls.tarikh.value = todayISO();
-        
-        // Reset table
-        refreshTable();
-        
-        // Reset inputs
+        $("entriesBody").innerHTML =
+          '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>';
         ["lokasi", "ulasan"].forEach((id) => ($(id).value = ""));
-        currentImages.length = 0;
-        updateImagePreview();
+        state.imgData = "";
+        $("preview").style.display = "none";
         $("fileCamera").value = "";
         $("fileGallery").value = "";
-        
-        showToast("PDF dihantar! Data dibersihkan.");
+        Object.values(formEls).forEach((el) => (el.value = ""));
+        showToast("Selesai. Data dibersihkan.");
       });
 
-      // ===== Mobile viewport handling
+      // ===== Cetak HTML fallback (ulang header setiap halaman; item: kiri gambar, kanan ulasan)
+      function openPrintView() {
+        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
+        const items = readEntries();
+        const win = window.open("", "_blank");
+        const esc = (s) =>
+          String(s || "").replace(
+            /[&<>]/g,
+            (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])
+          );
+
+        const headerBlock = `
+          <h1>LAPORAN LAWATAN TAPAK</h1>
+          <div class="sub">Dijana: ${new Date().toLocaleString()}</div>
+          <table style="width:100%; margin-bottom:20px">
+            <tr><td><strong>Nama Projek:</strong></td><td>${esc(
+              form.namaProjek
+            )}</td></tr>
+            <tr><td><strong>Perkara:</strong></td><td>${esc(
+              form.perkara
+            )}</td></tr>
+            <tr><td><strong>Tarikh:</strong></td><td>${esc(
+              form.tarikh
+            )}</td></tr>
+            <tr><td><strong>Nama Bangunan:</strong></td><td>${esc(
+              form.namaBangunan
+            )}</td></tr>
+            <tr><td><strong>Email:</strong></td><td>${esc(form.email)}</td></tr>
+          </table>
+          <hr>
+        `;
+
+        let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan (Cetak)</title>
+        <style>
+          body{font-family:Inter,Arial,sans-serif;margin:14mm}
+          h1{font-size:16pt;margin:0 0 4pt;text-align:center}
+          .sub{font-size:9pt;text-align:center;margin:0 0 8pt}
+          table{border-collapse:collapse;width:100%;font-size:10pt}
+          th,td{border:1px solid #aaa;padding:6pt;vertical-align:top}
+          .page-break{page-break-before:always}
+          .gallery img{max-width:100%;max-height:120pt;object-fit:contain}
+          @page{size:A4;margin:14mm}
+        </style></head><body>${headerBlock}`;
+
+        if (items.length === 0) {
+          html += "<p>(Tiada item)</p>";
+        } else {
+          items.forEach((it, idx) => {
+            if (idx > 0) html += '<div class="page-break"></div>' + headerBlock;
+            html += `
+              <table style="margin-top:8pt">
+                <tr><th style="width:50%">No: ${
+                  idx + 1
+                } &nbsp;&nbsp; Lokasi: ${esc(
+              it.lokasi || "-"
+            )}</th><th>Ulasan</th></tr>
+                <tr>
+                  <td class="gallery">${
+                    it.img ? `<img src="${it.img}">` : "(tiada gambar)"
+                  }</td>
+                  <td><ul>${esc(it.ulasan || "")
+                    .split(/\n+/)
+                    .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
+                    .join("")}</ul></td>
+                </tr>
+              </table>
+            `;
+          });
+        }
+        html += "</body></html>";
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+
+        // Tunggu gambar dimuat sebelum cetak
+        const t = setInterval(() => {
+          const imgs = win.document.images;
+          let ok = true;
+          for (const im of imgs) {
+            if (!im.complete) {
+              ok = false;
+              break;
+            }
+          }
+          if (ok) {
+            clearInterval(t);
+            win.focus();
+            win.print();
+          }
+        }, 200);
+      }
+
+      // ===== init & mobile keyboard handling
+      loadForm();
+      refreshTable();
       (function () {
         const vp = document.querySelector('meta[name="viewport"]');
-        function adjustViewport() {
-          if (vp) {
+        function lock() {
+          if (vp)
             vp.setAttribute(
               "content",
               "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
             );
-          }
         }
-        
+        function unlock() {
+          if (vp)
+            vp.setAttribute(
+              "content",
+              "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+            );
+        }
         document.addEventListener("focusin", (e) => {
-          if (/INPUT|TEXTAREA/.test(e.target.tagName)) adjustViewport();
+          if (/INPUT|TEXTAREA/.test(e.target.tagName)) lock();
         });
-        
         document.addEventListener("focusout", (e) => {
-          if (/INPUT|TEXTAREA/.test(e.target.tagName)) adjustViewport();
+          if (/INPUT|TEXTAREA/.test(e.target.tagName)) unlock();
         });
-        
-        if (window.visualViewport) {
-          const foot = $("section4");
-          const wrap = document.querySelector(".wrap");
-          const adjust = () => {
-            const vv = visualViewport;
-            const kb = Math.max(0, innerHeight - vv.height);
-            wrap.style.paddingBottom = (kb ? kb + 24 : 16) + "px";
-            if (foot) foot.style.marginBottom = (kb ? kb : 0) + "px";
-          };
-          visualViewport.addEventListener("resize", adjust);
-          visualViewport.addEventListener("scroll", adjust);
-          adjust();
-        }
+        // if (window.visualViewport) {
+        //   const foot = $("section4"),
+        //     wrap = document.querySelector(".wrap");
+        //   const adjust = () => {
+        //     const vv = visualViewport;
+        //     const kb = Math.max(0, innerHeight - vv.height);
+        //     wrap.style.paddingBottom = (kb ? kb + 24 : 16) + "px";
+        //     if (foot) foot.style.marginBottom = (kb ? kb : 0) + "px";
+        //   };
+        //   visualViewport.addEventListener("resize", adjust);
+        //   visualViewport.addEventListener("scroll", adjust);
+        //   adjust();
+        // }
       })();
-
-      // ===== Initialize
-      loadForm();
-      refreshTable();
     </script>
   </body>
 </html>
