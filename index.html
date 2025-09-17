@@ -380,48 +380,71 @@
       );
 
       // ===== Gambar (kamera / galeri)
-      const MAX_WIDTH = 1800;
-      const fileToDataURL = (file) =>
-        new Promise((resolve, reject) => {
-          const img = new Image();
-          const fr = new FileReader();
-          fr.onload = () => {
-            img.onload = () => {
-              const scale = Math.min(
-                1,
-                MAX_WIDTH / (img.naturalWidth || MAX_WIDTH)
-              );
-              const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale),
-                h = Math.round((img.naturalHeight || MAX_WIDTH * 0.66) * scale);
-              const cv = document.createElement("canvas");
-              cv.width = w;
-              cv.height = h;
-              cv.getContext("2d").drawImage(img, 0, 0, w, h);
-              resolve(cv.toDataURL("image/jpeg", 0.92));
+      // 1) Kompres gambar lebih agresif untuk iOS
+      const MAX_WIDTH = 1024; // dari 1800 -> 1024
+      async function compressImageToTarget(file, targetKB = 300) {
+        const fr = new FileReader();
+        const img = new Image();
+        const loadFile = () =>
+          new Promise((res, rej) => {
+            fr.onload = () => {
+              img.onload = () => res();
+              img.onerror = rej;
+              img.src = fr.result;
             };
-            img.onerror = reject;
-            img.src = fr.result;
-          };
-          fr.onerror = reject;
-          fr.readAsDataURL(file);
-        });
+            fr.onerror = rej;
+            fr.readAsDataURL(file);
+          });
+        await loadFile();
 
-      const state = { imgData: "" };
-      $("btnKamera").addEventListener("click", () => $("fileCamera").click());
-      $("btnGaleri").addEventListener("click", () => $("fileGallery").click());
+        // Scale ikut MAX_WIDTH
+        const scale = Math.min(1, MAX_WIDTH / (img.naturalWidth || MAX_WIDTH));
+        const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale);
+        const h = Math.round((img.naturalHeight || MAX_WIDTH * 0.66) * scale);
+
+        const cv = document.createElement("canvas");
+        cv.width = w;
+        cv.height = h;
+        const ctx = cv.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Turunkan kualiti sehingga < targetKB
+        let q = 0.7; // mula sederhana
+        let dataURL = cv.toDataURL("image/jpeg", q);
+        const toKB = (d) => Math.round((d.length * 3) / 4 / 1024);
+        while (toKB(dataURL) > targetKB && q > 0.4) {
+          q -= 0.05;
+          dataURL = cv.toDataURL("image/jpeg", q);
+        }
+        return dataURL;
+      }
+
       async function onFilePicked(file) {
         if (!file) return;
         try {
-          const url = await fileToDataURL(file);
+          const url = await compressImageToTarget(file, 300); // ~300KB
           state.imgData = url;
           const p = $("preview");
           p.src = url;
           p.style.display = "block";
         } catch (e) {
           console.error(e);
-          showToast("Gagal baca gambar");
+          showToast("Gagal baca/kompres gambar");
         }
       }
+
+      // 2) Lindungi localStorage daripada penuh
+      function writeEntries(arr) {
+        try {
+          localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
+        } catch (e) {
+          console.warn("writeEntries error:", e);
+          alert(
+            "Storan tempatan penuh di iPhone. Sila padam sebahagian item atau tambah tanpa gambar."
+          );
+        }
+      }
+
       $("fileCamera").addEventListener("change", (e) =>
         onFilePicked(e.target.files?.[0])
       );
