@@ -294,7 +294,7 @@
         </div>
 
         <div class="btnbar" style="margin-top: 8px">
-          <button class="ok" id="btnSimpanData">Save</button>
+          <button class="ok" id="btnSimpanData">Save1</button>
           <button class="warn" id="btnClear">Reset</button>
         </div>
       </div>
@@ -580,58 +580,31 @@
 
           // Kiri: gambar
           if (it.img) {
-            try {
-              const dim = await new Promise((res) => {
-                const im = new Image();
-                im.onload = () =>
-                  res({
-                    w: im.naturalWidth || 1200,
-                    h: im.naturalHeight || 800,
-                  });
-                im.onerror = () => res({ w: 1200, h: 800 });
-                im.src = it.img;
-              });
-
-              const ratio = dim.h / dim.w;
-              const maxW = leftW - 10;
-              const maxH = itemH - 10;
-              let imgW = maxW;
-              let imgH = maxW * ratio;
-
-              if (imgH > maxH) {
-                imgH = maxH;
-                imgW = maxH / ratio;
-              }
-
-              const imgX = M + 5 + (maxW - imgW) / 2;
-              const imgY = y + 5 + (maxH - imgH) / 2;
-
-              doc.addImage(
-                it.img,
-                "JPEG",
-                imgX,
-                imgY,
-                imgW,
-                imgH,
-                undefined,
-                "FAST"
-              );
-            } catch (e) {
-              doc.setFont("helvetica", "italic");
-              doc.setFontSize(10);
-              doc.text(
-                "(gambar tidak dapat dimuatkan)",
-                M + leftW / 2,
-                y + itemH / 2,
-                {
-                  align: "center",
-                }
-              );
-            }
+            const dim = await new Promise((res) => {
+              const im = new Image();
+              im.onload = () =>
+                res({ w: im.naturalWidth || 1200, h: im.naturalHeight || 800 });
+              im.src = it.img;
+            });
+            const ratio = dim.h / dim.w;
+            const dw = boxW - 10;
+            const dh = Math.min(imgH, dw * ratio);
+            doc.rect(leftX, y, boxW, imgH);
+            doc.addImage(
+              it.img,
+              "JPEG",
+              leftX + 5,
+              y + 5,
+              dw,
+              dh,
+              undefined,
+              "FAST"
+            );
           } else {
+            doc.rect(leftX, y, boxW, imgH);
             doc.setFont("helvetica", "italic");
             doc.setFontSize(10);
-            doc.text("(tiada gambar)", M + leftW / 2, y + itemH / 2, {
+            doc.text("(tiada gambar)", leftX + boxW / 2, y + imgH / 2, {
               align: "center",
             });
           }
