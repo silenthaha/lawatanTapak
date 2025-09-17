@@ -112,6 +112,7 @@
         padding: 10px 14px;
         border-radius: 12px;
         font-weight: 600;
+        cursor: pointer;
       }
       button.primary {
         background: var(--accent);
@@ -198,6 +199,42 @@
         font-size: 0.85rem;
         padding: 6px 10px;
       }
+      
+      /* Multiple image preview styles */
+      .image-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .image-preview-item {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .image-preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .image-preview-item button {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--danger);
+        color: white;
+        font-size: 12px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
       @media print {
         #section4,
         .toast {
@@ -278,17 +315,14 @@
                 accept="image/*"
                 capture="environment"
                 hidden
+                multiple
               />
-              <input id="fileGallery" type="file" accept="image/*" hidden />
+              <input id="fileGallery" type="file" accept="image/*" hidden multiple />
               <button id="btnKamera" class="primary">📷 Kamera</button>
               <button id="btnGaleri" class="primary">🖼️ Galeri</button>
             </div>
-            <img
-              id="preview"
-              class="thumb"
-              alt="Pratonton"
-              style="display: none; margin-top: 8px"
-            />
+            
+            <div id="imagePreviewContainer" class="image-preview-container" style="display: none;"></div>
           </div>
 
           <div>
@@ -347,8 +381,8 @@
       };
       const todayISO = () => new Date().toISOString().slice(0, 10);
       const LS_KEYS = {
-        form: "laporan_form_v5",
-        entries: "laporan_entries_v5",
+        form: "laporan_form_v6",
+        entries: "laporan_entries_v6",
       };
 
       // ===== Form autosave
@@ -380,18 +414,19 @@
         el.addEventListener("input", saveForm)
       );
 
-      // ===== Image handling - Unlimited storage with thumbnails
-      const MAX_WIDTH = 1200; // Same for all devices
-      const THUMB_WIDTH = 150; // Small thumbnail for preview
+      // ===== Image handling - Unlimited images with thumbnails
+      const MAX_WIDTH = 1200; // For PDF
+      const THUMB_WIDTH = 150; // For preview
       const tempImages = new Map(); // Full images for PDF
       const thumbImages = new Map(); // Small thumbnails for preview
+      
       const fileToDataURL = (file) =>
         new Promise((resolve, reject) => {
           const img = new Image();
           const fr = new FileReader();
           fr.onload = () => {
             img.onload = () => {
-              // Create full size image for PDF
+              // Create full size image for PDF (1200px)
               const scale = Math.min(1, MAX_WIDTH / (img.naturalWidth || MAX_WIDTH));
               const w = Math.round((img.naturalWidth || MAX_WIDTH) * scale);
               const h = Math.round((img.naturalHeight || MAX_WIDTH * 0.66) * scale);
@@ -415,7 +450,7 @@
               const thumbCtx = thumbCanvas.getContext("2d");
               thumbCtx.drawImage(img, 0, 0, thumbW, thumbH);
               
-              const thumbnail = thumbCanvas.toDataURL("image/jpeg", 0.6);
+              const thumbnail = thumbCanvas.toDataURL("image/jpeg", 0.7);
               
               resolve({ fullImage, thumbnail });
             };
@@ -426,34 +461,91 @@
           fr.readAsDataURL(file);
         });
 
-      const state = { imgData: "", thumbData: "" };
+      // State for current images
+      const currentImages = [];
       
+      // Setup camera and gallery buttons
       $("btnKamera").addEventListener("click", () => $("fileCamera").click());
       $("btnGaleri").addEventListener("click", () => $("fileGallery").click());
       
-      async function onFilePicked(file) {
-        if (!file) return;
-        try {
-          const { fullImage, thumbnail } = await fileToDataURL(file);
-          state.imgData = fullImage;
-          state.thumbData = thumbnail;
-          const p = $("preview");
-          p.src = thumbnail; // Show thumbnail in preview
-          p.style.display = "block";
-        } catch (e) {
-          console.error(e);
-          showToast("Gagal baca gambar");
+      // Handle file selection
+      async function onFilesPicked(files) {
+        if (!files || files.length === 0) return;
+        
+        showToast("Memproses gambar...");
+        
+        // Process all selected files
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          try {
+            const { fullImage, thumbnail } = await fileToDataURL(file);
+            const imageId = `img_${Date.now()}_${i}`;
+            
+            // Store in current images array
+            currentImages.push({
+              imageId,
+              fullImage,
+              thumbnail
+            });
+            
+          } catch (e) {
+            console.error(e);
+            showToast("Gagal memproses beberapa gambar");
+          }
         }
+        
+        updateImagePreview();
+        showToast(`${files.length} gambar ditambah`);
       }
       
-      $("fileCamera").addEventListener("change", (e) =>
-        onFilePicked(e.target.files?.[0])
-      );
-      $("fileGallery").addEventListener("change", (e) =>
-        onFilePicked(e.target.files?.[0])
-      );
+      // Update image preview
+      function updateImagePreview() {
+        const container = $("imagePreviewContainer");
+        container.innerHTML = "";
+        
+        if (currentImages.length === 0) {
+          container.style.display = "none";
+          return;
+        }
+        
+        container.style.display = "flex";
+        
+        currentImages.forEach((image, index) => {
+          const previewItem = document.createElement("div");
+          previewItem.className = "image-preview-item";
+          
+          const img = document.createElement("img");
+          img.src = image.thumbnail;
+          img.alt = `Gambar ${index + 1}`;
+          
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "×";
+          removeBtn.title = "Buang gambar";
+          removeBtn.onclick = (e) => {
+            e.preventDefault();
+            currentImages.splice(index, 1);
+            updateImagePreview();
+            showToast("Gambar dibuang");
+          };
+          
+          previewItem.appendChild(img);
+          previewItem.appendChild(removeBtn);
+          container.appendChild(previewItem);
+        });
+      }
+      
+      // Setup file input event listeners
+      $("fileCamera").addEventListener("change", (e) => {
+        onFilesPicked(e.target.files);
+        e.target.value = ""; // Reset input
+      });
+      
+      $("fileGallery").addEventListener("change", (e) => {
+        onFilesPicked(e.target.files);
+        e.target.value = ""; // Reset input
+      });
 
-      // ===== Entries management - Unlimited items, smart storage
+      // ===== Entries management - Unlimited items with images
       const readEntries = () => {
         try {
           const stored = localStorage.getItem(LS_KEYS.entries);
@@ -467,16 +559,7 @@
       
       const writeEntries = (arr) => {
         try {
-          // Save only text data to localStorage (no images at all)
-          const textOnlyArr = arr.map((item, index) => ({
-            lokasi: item.lokasi,
-            ulasan: item.ulasan,
-            hasImage: !!item.fullImage,
-            imageId: item.imageId,
-            ts: item.ts
-          }));
-          
-          localStorage.setItem(LS_KEYS.entries, JSON.stringify(textOnlyArr));
+          localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
         } catch (e) {
           console.error('Failed to write entries:', e);
           showToast("Gagal simpan data.");
@@ -497,23 +580,40 @@
         // Show info footer
         const infoRow = document.createElement("tr");
         infoRow.innerHTML = `<td colspan="4" style="background: #0f1a31; color: var(--muted); text-align: center; font-size: 0.8rem; padding: 8px;">
-          📊 Jumlah: ${items.length} item${items.length > 1 ? 's' : ''}. Tiada had bilangan untuk site visit.
+          📊 Jumlah: ${items.length} item${items.length > 1 ? 's' : ''}. Tiada had bilangan gambar.
         </td>`;
         body.appendChild(infoRow);
         
         items.forEach((it, idx) => {
           const tr = document.createElement("tr");
           
-          // Gambar - Show small thumbnail if available
+          // Gambar - Show thumbnails for all images
           const tImg = document.createElement("td");
-          if (it.hasImage && it.imageId && thumbImages.has(it.imageId)) {
-            const thumbSrc = thumbImages.get(it.imageId);
-            tImg.innerHTML = `<img src="${thumbSrc}" alt="Gambar ${idx + 1}" style="max-width: 80px; max-height: 80px; border-radius: 4px; object-fit: cover;">`;
-          } else if (it.hasImage) {
-            tImg.innerHTML = `<div style="background: #0f1a31; padding: 15px; border-radius: 8px; text-align: center;">
-              <div style="font-size: 20px; margin-bottom: 4px;">📷</div>
-              <div style="font-size: 0.75rem; color: var(--muted);">Gambar ${idx + 1}</div>
-            </div>`;
+          if (it.images && it.images.length > 0) {
+            const imgContainer = document.createElement("div");
+            imgContainer.style.display = "flex";
+            imgContainer.style.flexWrap = "wrap";
+            imgContainer.style.gap = "4px";
+            
+            it.images.forEach((imgData, imgIdx) => {
+              const imgWrapper = document.createElement("div");
+              imgWrapper.style.position = "relative";
+              imgWrapper.style.width = "60px";
+              imgWrapper.style.height = "60px";
+              
+              const img = document.createElement("img");
+              img.src = imgData.thumbnail;
+              img.alt = `Gambar ${imgIdx + 1}`;
+              img.style.width = "100%";
+              img.style.height = "100%";
+              img.style.objectFit = "cover";
+              img.style.borderRadius = "4px";
+              
+              imgWrapper.appendChild(img);
+              imgContainer.appendChild(imgWrapper);
+            });
+            
+            tImg.appendChild(imgContainer);
           } else {
             tImg.innerHTML = '<span class="tmuted">(tiada gambar)</span>';
           }
@@ -540,11 +640,6 @@
           del.onclick = () => {
             if (confirm("Padam item ini?")) {
               const a = readEntries();
-              // Remove from temp storage
-              if (a[idx] && a[idx].imageId) {
-                tempImages.delete(a[idx].imageId);
-                thumbImages.delete(a[idx].imageId);
-              }
               a.splice(idx, 1);
               writeEntries(a);
               refreshTable();
@@ -558,34 +653,23 @@
         });
       };
 
-      // Save item - Unlimited items with smart image storage
+      // Save item - Unlimited items with images
       $("btnSimpanData").addEventListener("click", () => {
         const lokasi = $("lokasi").value.trim();
         const ulasan = $("ulasan").value.trim();
-        const fullImage = state.imgData || "";
-        const thumbnail = state.thumbData || "";
         
-        if (!lokasi && !ulasan && !fullImage) {
+        if (!lokasi && !ulasan && currentImages.length === 0) {
           showToast("Tiada apa untuk disimpan");
           return;
         }
         
         const arr = readEntries();
-        const imageId = `img_${Date.now()}_${arr.length}`;
         
-        // Store images in memory maps
-        if (fullImage) {
-          tempImages.set(imageId, fullImage); // Full image for PDF
-          thumbImages.set(imageId, thumbnail); // Small thumbnail for preview
-        }
-        
-        // Add item with reference only
+        // Add item with all images
         arr.push({ 
           lokasi, 
           ulasan, 
-          fullImage, // Keep for compatibility
-          hasImage: !!fullImage,
-          imageId: imageId,
+          images: [...currentImages], // Store all current images
           ts: Date.now() 
         });
         
@@ -596,9 +680,8 @@
         // Clear inputs
         $("lokasi").value = "";
         $("ulasan").value = "";
-        state.imgData = "";
-        state.thumbData = "";
-        $("preview").style.display = "none";
+        currentImages.length = 0;
+        updateImagePreview();
         $("fileCamera").value = "";
         $("fileGallery").value = "";
       });
@@ -607,9 +690,8 @@
       $("btnClear").addEventListener("click", () => {
         $("lokasi").value = "";
         $("ulasan").value = "";
-        state.imgData = "";
-        state.thumbData = "";
-        $("preview").style.display = "none";
+        currentImages.length = 0;
+        updateImagePreview();
         $("fileCamera").value = "";
         $("fileGallery").value = "";
       });
@@ -647,7 +729,7 @@
           doc.text(`Dijana: ${dateStr}, ${timeStr}`, W / 2, y, { align: "center" });
           y += 20;
 
-          // Maklumat Asas section - no table, just clean layout
+          // Maklumat Asas section
           doc.setFont("helvetica", "bold");
           doc.setFontSize(11);
           doc.text("Maklumat Asas", M, y);
@@ -680,7 +762,15 @@
         }
 
         async function drawItem(it, idx) {
-          const minNeeded = 280;
+          const images = it.images || [];
+          const hasImages = images.length > 0;
+          
+          // Calculate needed height based on content
+          let minNeeded = 180; // Base height for text content
+          if (hasImages) {
+            minNeeded = 280; // Additional space for images
+          }
+          
           if (y + minNeeded > H - M) {
             doc.addPage();
             drawHeader();
@@ -689,7 +779,7 @@
           const leftW = (W - M * 2) * 0.45;
           const rightW = (W - M * 2) * 0.55;
           const rightX = M + leftW + 10;
-          const itemH = 200;
+          const itemH = hasImages ? 280 : 180;
 
           // Item header
           doc.setFont("helvetica", "bold");
@@ -701,39 +791,74 @@
           doc.setDrawColor(0);
           doc.setLineWidth(0.8);
           
-          // Left box for image
+          // Left box for image(s)
           doc.rect(M, y, leftW, itemH);
           
           // Right box for comments
           doc.rect(rightX, y, rightW, itemH);
 
-          // Add image - Get from temporary storage
-          if (it.hasImage && it.imageId && tempImages.has(it.imageId)) {
+          // Add images if available
+          if (hasImages) {
             try {
-              const imgData = tempImages.get(it.imageId);
-              const dim = await new Promise((res) => {
-                const im = new Image();
-                im.onload = () =>
-                  res({ w: im.naturalWidth || 1200, h: im.naturalHeight || 800 });
-                im.onerror = () => res({ w: 1200, h: 800 });
-                im.src = imgData;
-              });
+              // Calculate image dimensions
+              const imgAreaWidth = leftW - 20;
+              const imgAreaHeight = itemH - 20;
               
-              const ratio = dim.h / dim.w;
-              const maxW = leftW - 10;
-              const maxH = itemH - 10;
-              let imgW = maxW;
-              let imgH = maxW * ratio;
-              
-              if (imgH > maxH) {
-                imgH = maxH;
-                imgW = maxH / ratio;
+              if (images.length === 1) {
+                // Single image - use full space
+                const imgData = images[0].fullImage;
+                const dim = await new Promise((res) => {
+                  const im = new Image();
+                  im.onload = () =>
+                    res({ w: im.naturalWidth || 1200, h: im.naturalHeight || 800 });
+                  im.onerror = () => res({ w: 1200, h: 800 });
+                  im.src = imgData;
+                });
+                
+                const ratio = dim.h / dim.w;
+                let imgW = imgAreaWidth;
+                let imgH = imgAreaWidth * ratio;
+                
+                if (imgH > imgAreaHeight) {
+                  imgH = imgAreaHeight;
+                  imgW = imgAreaHeight / ratio;
+                }
+                
+                const imgX = M + 10 + (imgAreaWidth - imgW) / 2;
+                const imgY = y + 10 + (imgAreaHeight - imgH) / 2;
+                
+                doc.addImage(imgData, "JPEG", imgX, imgY, imgW, imgH, undefined, "FAST");
+              } else {
+                // Multiple images - arrange in grid
+                const cols = 2;
+                const rows = Math.ceil(images.length / cols);
+                const cellWidth = (imgAreaWidth - 5) / cols;
+                const cellHeight = (imgAreaHeight - 5) / rows;
+                
+                for (let i = 0; i < Math.min(images.length, 6); i++) {
+                  const imgData = images[i].fullImage;
+                  const col = i % cols;
+                  const row = Math.floor(i / cols);
+                  
+                  const imgX = M + 10 + col * (cellWidth + 5);
+                  const imgY = y + 10 + row * (cellHeight + 5);
+                  
+                  // Add image with fixed cell size
+                  doc.addImage(imgData, "JPEG", imgX, imgY, cellWidth, cellHeight, undefined, "FAST");
+                }
+                
+                // Show indicator if there are more than 6 images
+                if (images.length > 6) {
+                  doc.setFont("helvetica", "italic");
+                  doc.setFontSize(8);
+                  doc.text(
+                    `+${images.length - 6} lagi gambar`,
+                    M + leftW / 2,
+                    y + itemH - 10,
+                    { align: "center" }
+                  );
+                }
               }
-              
-              const imgX = M + 5 + (maxW - imgW) / 2;
-              const imgY = y + 5 + (maxH - imgH) / 2;
-              
-              doc.addImage(imgData, "JPEG", imgX, imgY, imgW, imgH, undefined, "FAST");
             } catch (e) {
               doc.setFont("helvetica", "italic");
               doc.setFontSize(10);
@@ -775,7 +900,7 @@
         // Generate PDF content
         drawHeader();
         
-        // Draw all items with their images from temporary storage
+        // Draw all items with their images
         for (let i = 0; i < items.length; i++) {
           await drawItem(items[i], i);
         }
@@ -852,10 +977,6 @@
         localStorage.removeItem(LS_KEYS.entries);
         localStorage.removeItem(LS_KEYS.form);
         
-        // Clear temporary storage
-        tempImages.clear();
-        thumbImages.clear();
-        
         // Reset form
         Object.values(formEls).forEach((el) => (el.value = ""));
         formEls.tarikh.value = todayISO();
@@ -865,9 +986,8 @@
         
         // Reset inputs
         ["lokasi", "ulasan"].forEach((id) => ($(id).value = ""));
-        state.imgData = "";
-        state.thumbData = "";
-        $("preview").style.display = "none";
+        currentImages.length = 0;
+        updateImagePreview();
         $("fileCamera").value = "";
         $("fileGallery").value = "";
         
