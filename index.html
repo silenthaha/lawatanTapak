@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>Laporan Lawatan Tapak — Mobile</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,12 +29,25 @@
       }
       * {
         box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
       }
       html,
       body {
         height: 100%;
-        touch-action: manipulation; /* iOS 13+ hormat ini */
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
       }
+      
+      /* Allow text selection for inputs and textareas */
+      input, textarea, [contenteditable] {
+        -webkit-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
+      }
+      
       button,
       a,
       input,
@@ -47,11 +60,14 @@
         background: var(--bg);
         color: var(--text);
         -webkit-text-size-adjust: 100%;
+        position: relative;
+        overflow-x: hidden;
       }
       .wrap {
         max-width: 860px;
         margin-inline: auto;
         padding: 16px;
+        min-height: 100vh;
       }
       h1 {
         font-size: 1.35rem;
@@ -97,6 +113,8 @@
         border-radius: 12px;
         font-size: 16px;
         line-height: 1.4;
+        -webkit-appearance: none;
+        appearance: none;
       }
       input[type="date"] {
         padding: 10px 12px;
@@ -112,6 +130,7 @@
       }
       button {
         appearance: none;
+        -webkit-appearance: none;
         border: 1px solid var(--border);
         background: #0f1a31;
         color: var(--text);
@@ -119,6 +138,9 @@
         border-radius: 12px;
         font-weight: 600;
         cursor: pointer;
+        font-size: 16px; /* Prevent zoom on iOS */
+        min-height: 44px; /* iOS touch target */
+        -webkit-tap-highlight-color: transparent;
       }
       button.primary {
         background: var(--accent);
@@ -154,18 +176,48 @@
         width: 100%;
         border-collapse: collapse;
         font-size: 0.92rem;
+        table-layout: fixed; /* Better mobile performance */
       }
       .table th,
       .table td {
         border: 1px solid var(--border);
         padding: 10px;
         vertical-align: top;
+        word-wrap: break-word;
       }
       .table th {
         background: #0f1a31;
         position: sticky;
         top: 0;
       }
+      
+      /* Mobile optimized table */
+      @media (max-width: 767px) {
+        .table {
+          font-size: 0.8rem;
+        }
+        .table th,
+        .table td {
+          padding: 8px 4px;
+        }
+        .table th:first-child,
+        .table td:first-child {
+          width: 30%;
+        }
+        .table th:nth-child(2),
+        .table td:nth-child(2) {
+          width: 20%;
+        }
+        .table th:nth-child(3),
+        .table td:nth-child(3) {
+          width: 40%;
+        }
+        .table th:last-child,
+        .table td:last-child {
+          width: 10%;
+        }
+      }
+      
       .tmuted {
         color: var(--muted);
       }
@@ -180,29 +232,44 @@
         border-radius: 10px;
         border: 1px solid var(--border);
         display: none;
-        z-index: 5;
+        z-index: 1000;
+        max-width: 90vw;
+        text-align: center;
       }
-      /* .sticky-footer {
-        position: fixed;
-        bottom: 0;
-        padding: 8px;
-        background: linear-gradient(
-          180deg,
-          rgba(11, 18, 32, 0) 0%,
-          rgba(11, 18, 32, 0.85) 20%,
-          rgba(11, 18, 32, 1) 60%
-        );
-      } */
+      
       .btn-ghost {
         background: transparent;
         font-size: 0.8rem;
         padding: 6px 10px;
+        min-height: 32px;
       }
       .note {
         font-size: 0.8rem;
         color: var(--muted);
         margin-top: 12px;
       }
+      
+      /* Fix iOS double-tap zoom */
+      .no-zoom {
+        touch-action: manipulation;
+      }
+      
+      /* Prevent horizontal scroll */
+      .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* Image in table optimizations */
+      .table img {
+        max-width: 100%;
+        max-height: 120px;
+        object-fit: cover;
+        border-radius: 6px;
+        display: block;
+        margin: 0 auto;
+      }
+      
       @media print {
         #section4,
         .toast {
@@ -213,9 +280,23 @@
           color: #000;
         }
       }
+      
+      /* Loading state */
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      
+      /* Better focus states for iOS */
+      input:focus,
+      textarea:focus,
+      button:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
     </style>
   </head>
-  <body>
+  <body class="no-zoom">
     <div class="wrap">
       <h1>📋 Laporan Lawatan Tapak</h1>
       <div class="subtitle">
@@ -287,17 +368,16 @@
                 accept="image/*"
                 capture="environment"
                 hidden
+                multiple
               />
-              <input id="fileGallery" type="file" accept="image/*" hidden />
+              <input id="fileGallery" type="file" accept="image/*" hidden multiple />
               <button id="btnKamera" class="primary">📷 Kamera</button>
               <button id="btnGaleri" class="primary">🖼️ Galeri</button>
             </div>
-            <img
-              id="preview"
-              class="thumb"
-              alt="Pratonton"
-              style="display: none; margin-top: 8px"
-            />
+            <div id="previewContainer" style="display: none; margin-top: 8px">
+              <div id="imagePreview"></div>
+              <button id="btnClearImages" class="btn-ghost" style="margin-top: 8px">Kosongkan Gambar</button>
+            </div>
           </div>
 
           <div>
@@ -318,23 +398,25 @@
       <!-- SECTION 3 (list) -->
       <div class="card" id="section3">
         <h2>Senarai Item Disimpan</h2>
-        <div id="entriesWrap"></div>
-        <table class="table" id="entriesTable">
-          <thead>
-            <tr>
-              <th style="width: 25%">Gambar</th>
-              <th style="width: 20%">Lokasi</th>
-              <th style="width: 45%">Ulasan</th>
-              <th style="width: 10%">Tindakan</th>
-            </tr>
-          </thead>
-          <tbody id="entriesBody">
-            <tr>
-              <td class="tmuted" colspan="4">Tiada data.</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-container">
+          <table class="table" id="entriesTable">
+            <thead>
+              <tr>
+                <th>Gambar</th>
+                <th>Lokasi</th>
+                <th>Ulasan</th>
+                <th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="entriesBody">
+              <tr>
+                <td class="tmuted" colspan="4">Tiada data.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+      
       <!-- SECTION 4 (only Simpan & Hantar) -->
       <div class="card" id="section4">
         <div class="btnbar">
@@ -352,13 +434,29 @@
         const t = $("toast");
         t.textContent = msg;
         t.style.display = "block";
-        setTimeout(() => (t.style.display = "none"), 1600);
+        setTimeout(() => (t.style.display = "none"), 2000);
       };
       const todayISO = () => new Date().toISOString().slice(0, 10);
       const LS_KEYS = {
         form: "laporan_form_v4",
         entries: "laporan_entries_v4",
       };
+
+      // ===== Prevent iOS zoom issues
+      document.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function(e) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+          e.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, { passive: false });
 
       // ===== Autosave form
       const formEls = {
@@ -386,8 +484,10 @@
         el.addEventListener("input", saveForm)
       );
 
-      // ===== Gambar (kamera / galeri)
+      // ===== Enhanced image handling for multiple images
       const MAX_WIDTH = 1200;
+      const state = { images: [] };
+      
       const fileToDataURL = (file) =>
         new Promise((resolve, reject) => {
           const img = new Image();
@@ -404,7 +504,7 @@
               cv.width = w;
               cv.height = h;
               cv.getContext("2d").drawImage(img, 0, 0, w, h);
-              resolve(cv.toDataURL("image/jpeg", 0.92));
+              resolve(cv.toDataURL("image/jpeg", 0.85));
             };
             img.onerror = reject;
             img.src = fr.result;
@@ -413,28 +513,125 @@
           fr.readAsDataURL(file);
         });
 
-      const state = { imgData: "" };
-      $("btnKamera").addEventListener("click", () => $("fileCamera").click());
-      $("btnGaleri").addEventListener("click", () => $("fileGallery").click());
-      async function onFilePicked(file) {
-        if (!file) return;
+      const updateImagePreview = () => {
+        const container = $("previewContainer");
+        const preview = $("imagePreview");
+        
+        if (state.images.length === 0) {
+          container.style.display = "none";
+          return;
+        }
+        
+        container.style.display = "block";
+        preview.innerHTML = "";
+        
+        state.images.forEach((imgData, index) => {
+          const imgWrapper = document.createElement("div");
+          imgWrapper.style.cssText = `
+            position: relative;
+            display: inline-block;
+            margin: 4px;
+            border-radius: 8px;
+            overflow: hidden;
+          `;
+          
+          const img = document.createElement("img");
+          img.src = imgData;
+          img.style.cssText = `
+            max-width: 120px;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            display: block;
+          `;
+          
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "×";
+          removeBtn.style.cssText = `
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 100, 124, 0.9);
+            border: none;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: auto;
+            padding: 0;
+          `;
+          
+          removeBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            state.images.splice(index, 1);
+            updateImagePreview();
+            showToast("Gambar dipadamkan");
+          };
+          
+          imgWrapper.appendChild(img);
+          imgWrapper.appendChild(removeBtn);
+          preview.appendChild(imgWrapper);
+        });
+      };
+
+      $("btnKamera").addEventListener("click", (e) => {
+        e.preventDefault();
+        $("fileCamera").click();
+      });
+      
+      $("btnGaleri").addEventListener("click", (e) => {
+        e.preventDefault();
+        $("fileGallery").click();
+      });
+
+      async function onFilesPicked(files) {
+        if (!files || files.length === 0) return;
+        
+        const loadingToast = showToast("Memproses gambar...");
+        
         try {
-          const url = await fileToDataURL(file);
-          state.imgData = url;
-          const p = $("preview");
-          p.src = url;
-          p.style.display = "block";
+          for (const file of Array.from(files)) {
+            if (state.images.length >= 10) {
+              showToast("Maksimum 10 gambar sahaja");
+              break;
+            }
+            
+            const url = await fileToDataURL(file);
+            state.images.push(url);
+          }
+          
+          updateImagePreview();
+          showToast(`${files.length} gambar ditambah`);
+          
         } catch (e) {
           console.error(e);
-          showToast("Gagal baca gambar");
+          showToast("Gagal memproses gambar");
         }
       }
-      $("fileCamera").addEventListener("change", (e) =>
-        onFilePicked(e.target.files?.[0])
-      );
-      $("fileGallery").addEventListener("change", (e) =>
-        onFilePicked(e.target.files?.[0])
-      );
+
+      $("fileCamera").addEventListener("change", (e) => {
+        onFilesPicked(e.target.files);
+        e.target.value = ""; // Reset untuk membolehkan pilihan berulang
+      });
+      
+      $("fileGallery").addEventListener("change", (e) => {
+        onFilesPicked(e.target.files);
+        e.target.value = ""; // Reset untuk membolehkan pilihan berulang
+      });
+
+      $("btnClearImages").addEventListener("click", (e) => {
+        e.preventDefault();
+        state.images = [];
+        updateImagePreview();
+        showToast("Semua gambar dikosongkan");
+      });
 
       // ===== Entries (lokasi, ulasan, img)
       const readEntries = () => {
@@ -446,6 +643,7 @@
       };
       const writeEntries = (arr) =>
         localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
+        
       const refreshTable = () => {
         const body = $("entriesBody");
         body.innerHTML = "";
@@ -458,9 +656,27 @@
         items.forEach((it, idx) => {
           const tr = document.createElement("tr");
           const tImg = document.createElement("td");
-          tImg.innerHTML = it.img
-            ? `<img src="${it.img}" style="max-width:100%; max-height:150px; border-radius:8px">`
-            : '<span class="tmuted">(tiada)</span>';
+          
+          // Handle multiple images
+          if (it.images && it.images.length > 0) {
+            const imgContainer = document.createElement("div");
+            it.images.forEach((imgSrc, imgIdx) => {
+              const img = document.createElement("img");
+              img.src = imgSrc;
+              img.style.cssText = "max-width: 80px; max-height: 80px; object-fit: cover; margin: 2px; border-radius: 4px; display: inline-block;";
+              imgContainer.appendChild(img);
+            });
+            tImg.appendChild(imgContainer);
+          } else if (it.img) {
+            // Backward compatibility for single image
+            const img = document.createElement("img");
+            img.src = it.img;
+            img.style.cssText = "max-width: 100%; max-height: 120px; object-fit: cover; border-radius: 6px;";
+            tImg.appendChild(img);
+          } else {
+            tImg.innerHTML = '<span class="tmuted">(tiada)</span>';
+          }
+          
           const tLok = document.createElement("td");
           tLok.textContent = it.lokasi || "";
           const tUlas = document.createElement("td");
@@ -470,10 +686,13 @@
           del.className = "btn-ghost";
           del.textContent = "Padam";
           del.onclick = () => {
-            const a = readEntries();
-            a.splice(idx, 1);
-            writeEntries(a);
-            refreshTable();
+            if (confirm("Padam item ini?")) {
+              const a = readEntries();
+              a.splice(idx, 1);
+              writeEntries(a);
+              refreshTable();
+              showToast("Item dipadamkan");
+            }
           };
           tAct.appendChild(del);
           tr.append(tImg, tLok, tUlas, tAct);
@@ -484,36 +703,47 @@
       $("btnSimpanData").addEventListener("click", () => {
         const lokasi = $("lokasi").value.trim();
         const ulasan = $("ulasan").value.trim();
-        const img = state.imgData || "";
-        if (!lokasi && !ulasan && !img) {
+        const images = [...state.images]; // Copy current images
+        
+        if (!lokasi && !ulasan && images.length === 0) {
           showToast("Tiada apa untuk disimpan");
           return;
         }
+        
         const arr = readEntries();
-        arr.push({ lokasi, ulasan, img, ts: Date.now() });
+        const newItem = { 
+          lokasi, 
+          ulasan, 
+          images, // Store multiple images
+          ts: Date.now() 
+        };
+        
+        // Keep backward compatibility
+        if (images.length > 0) {
+          newItem.img = images[0]; // First image for compatibility
+        }
+        
+        arr.push(newItem);
         writeEntries(arr);
         refreshTable();
         showToast("Item ditambah");
 
-        // Reset form
-        // $("lokasi").value = "";
-        // $("ulasan").value = "";
-        state.imgData = "";
-        $("preview").style.display = "none";
-        $("fileCamera").value = "";
-        $("fileGallery").value = "";
+        // Reset form - clear lokasi and ulasan but keep images for next entry
+        $("lokasi").value = "";
+        $("ulasan").value = "";
       });
 
       $("btnClear").addEventListener("click", () => {
         $("lokasi").value = "";
         $("ulasan").value = "";
-        state.imgData = "";
-        $("preview").style.display = "none";
+        state.images = [];
+        updateImagePreview();
         $("fileCamera").value = "";
         $("fileGallery").value = "";
+        showToast("Borang dikosongkan");
       });
 
-      // ===== PDF builder (ulang Maklumat Asas di setiap page, item: kiri gambar, kanan ulasan)
+      // ===== PDF builder (updated for multiple images)
       async function buildPDF() {
         if (!window.jspdf || !window.jspdf.jsPDF)
           throw new Error("jsPDF not loaded");
@@ -526,12 +756,6 @@
 
         const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
         const items = readEntries();
-
-        function hRule() {
-          doc.setDrawColor(0);
-          doc.setLineWidth(0.6);
-          doc.line(M, y, W - M, y);
-        }
 
         function drawHeader() {
           y = M;
@@ -547,7 +771,7 @@
           });
           y += 14;
 
-          // Jadual Maklumat Asas | Butiran
+          // Jadual Maklumat Asas
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
           const info = [
@@ -575,7 +799,9 @@
         }
 
         async function drawItem(it, idx) {
-          const minNeeded = 280;
+          const images = it.images || (it.img ? [it.img] : []);
+          const minNeeded = 280 + (images.length > 1 ? 100 * Math.ceil(images.length / 2) : 0);
+          
           if (y + minNeeded > H - M) {
             doc.addPage();
             drawHeader();
@@ -584,7 +810,7 @@
           const leftW = (W - M * 2) * 0.45;
           const rightW = (W - M * 2) * 0.55;
           const rightX = M + leftW + 10;
-          const itemH = 200;
+          const itemH = Math.max(200, images.length > 2 ? 300 : 200);
 
           // Item header
           doc.setFont("helvetica", "bold");
@@ -592,54 +818,59 @@
           doc.text(`${idx + 1}. Lokasi: ${it.lokasi || "Bilik TCR"}`, M, y);
           y += 15;
 
-          // Create table-like structure with borders
+          // Create boxes
           doc.setDrawColor(0);
           doc.setLineWidth(0.8);
-
-          // Left box for image
           doc.rect(M, y, leftW, itemH);
-
-          // Right box for comments
           doc.rect(rightX, y, rightW, itemH);
 
-          // Add image
-          if (it.img) {
+          // Add images
+          if (images.length > 0) {
             try {
-              const dim = await new Promise((res) => {
-                const im = new Image();
-                im.onload = () =>
-                  res({
-                    w: im.naturalWidth || 1200,
-                    h: im.naturalHeight || 800,
-                  });
-                im.onerror = () => res({ w: 1200, h: 800 });
-                im.src = it.img;
-              });
+              const imagesPerRow = 2;
+              const imgW = (leftW - 20) / imagesPerRow;
+              const imgH = Math.min(imgW * 0.75, (itemH - 20) / Math.ceil(images.length / imagesPerRow));
 
-              const ratio = dim.h / dim.w;
-              const maxW = leftW - 10;
-              const maxH = itemH - 10;
-              let imgW = maxW;
-              let imgH = maxW * ratio;
+              for (let i = 0; i < images.length && i < 6; i++) { // Max 6 images
+                const row = Math.floor(i / imagesPerRow);
+                const col = i % imagesPerRow;
+                const imgX = M + 10 + col * imgW;
+                const imgY = y + 10 + row * (imgH + 5);
 
-              if (imgH > maxH) {
-                imgH = maxH;
-                imgW = maxH / ratio;
+                await new Promise((resolve) => {
+                  const img = new Image();
+                  img.onload = () => {
+                    try {
+                      doc.addImage(
+                        images[i],
+                        "JPEG",
+                        imgX,
+                        imgY,
+                        imgW - 5,
+                        imgH,
+                        undefined,
+                        "FAST"
+                      );
+                    } catch (e) {
+                      console.warn("Failed to add image:", e);
+                    }
+                    resolve();
+                  };
+                  img.onerror = resolve;
+                  img.src = images[i];
+                });
               }
 
-              const imgX = M + 5 + (maxW - imgW) / 2;
-              const imgY = y + 5 + (maxH - imgH) / 2;
-
-              doc.addImage(
-                it.img,
-                "JPEG",
-                imgX,
-                imgY,
-                imgW,
-                imgH,
-                undefined,
-                "FAST"
-              );
+              if (images.length > 6) {
+                doc.setFont("helvetica", "italic");
+                doc.setFontSize(8);
+                doc.text(
+                  `+${images.length - 6} lagi gambar`,
+                  M + leftW / 2,
+                  y + itemH - 10,
+                  { align: "center" }
+                );
+              }
             } catch (e) {
               doc.setFont("helvetica", "italic");
               doc.setFontSize(10);
@@ -647,257 +878,8 @@
                 "(gambar tidak dapat dimuatkan)",
                 M + leftW / 2,
                 y + itemH / 2,
-                {
-                  align: "center",
-                }
+                { align: "center" }
               );
             }
           } else {
-            doc.setFont("helvetica", "italic");
-            doc.setFontSize(10);
-            doc.text("(tiada gambar)", M + leftW / 2, y + itemH / 2, {
-              align: "center",
-            });
-          }
-
-          // Add comments header
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(10);
-          doc.text("Ulasan:", rightX + 8, y + 15);
-
-          // Add comments content
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          if (it.ulasan) {
-            const bullets = it.ulasan
-              .split(/\n+/)
-              .filter((line) => line.trim())
-              .map((s) => "• " + s.replace(/^•\s*/, ""));
-            const wrapped = doc.splitTextToSize(
-              bullets.join("\n"),
-              rightW - 16
-            );
-            doc.text(wrapped, rightX + 8, y + 30);
-          } else {
-            doc.setFont("helvetica", "italic");
-            doc.text("(tiada ulasan)", rightX + 8, y + 30);
-          }
-
-          y += itemH + 15;
-        }
-
-        // Header mula
-        drawHeader();
-        for (let i = 0; i < items.length; i++) {
-          await drawItem(items[i], i);
-        }
-
-        return doc;
-      }
-
-      async function shareOrPrint() {
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const fname = `LaporanTapak_${(form.namaProjek || "projek").replace(
-          /\s+/g,
-          "_"
-        )}_${todayISO()}.pdf`;
-        try {
-          if (window.jspdf && window.jspdf.jsPDF) {
-            const doc = await buildPDF();
-            const blob = doc.output("blob");
-            const file = new File([blob], fname, { type: "application/pdf" });
-            if (
-              navigator.share &&
-              navigator.canShare &&
-              navigator.canShare({ files: [file] })
-            ) {
-              await navigator.share({
-                title: "Laporan Tapak",
-                text: `Laporan: ${form.namaProjek || ""}`,
-                files: [file],
-              });
-              return;
-            }
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = fname;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-            return;
-          }
-        } catch (e) {
-          console.warn(e);
-        }
-        openPrintView(); // fallback HTML print
-      }
-
-      // Submit sahaja di Section 4
-      $("btnSubmit").addEventListener("click", async () => {
-        const required = ["namaProjek", "perkara", "tarikh", "email"];
-        for (const k of required) {
-          if (!formEls[k].value.trim()) {
-            alert("Sila lengkapkan semua medan wajib di Bahagian 1.");
-            return;
-          }
-        }
-
-        const items = readEntries();
-        if (items.length === 0) {
-          alert(
-            "Sila tambah sekurang-kurangnya satu item lokasi di Bahagian 2."
-          );
-          return;
-        }
-
-        await shareOrPrint();
-        // bersih data
-        localStorage.removeItem(LS_KEYS.entries);
-        localStorage.removeItem(LS_KEYS.form);
-        $("entriesBody").innerHTML =
-          '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>';
-        ["lokasi", "ulasan"].forEach((id) => ($(id).value = ""));
-        state.imgData = "";
-        $("preview").style.display = "none";
-        $("fileCamera").value = "";
-        $("fileGallery").value = "";
-        Object.values(formEls).forEach((el) => (el.value = ""));
-        showToast("Selesai. Data dibersihkan.");
-      });
-
-      // ===== Cetak HTML fallback (ulang header setiap halaman; item: kiri gambar, kanan ulasan)
-      function openPrintView() {
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const items = readEntries();
-        const win = window.open("", "_blank");
-        const esc = (s) =>
-          String(s || "").replace(
-            /[&<>]/g,
-            (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])
-          );
-
-        const headerBlock = `
-          <h1>LAPORAN LAWATAN TAPAK</h1>
-          <div class="sub">Dijana: ${new Date().toLocaleString()}</div>
-          <table style="width:100%; margin-bottom:20px">
-            <tr><td><strong>Nama Projek:</strong></td><td>${esc(
-              form.namaProjek
-            )}</td></tr>
-            <tr><td><strong>Perkara:</strong></td><td>${esc(
-              form.perkara
-            )}</td></tr>
-            <tr><td><strong>Tarikh:</strong></td><td>${esc(
-              form.tarikh
-            )}</td></tr>
-            <tr><td><strong>Nama Bangunan:</strong></td><td>${esc(
-              form.namaBangunan
-            )}</td></tr>
-            <tr><td><strong>Email:</strong></td><td>${esc(form.email)}</td></tr>
-          </table>
-          <hr>
-        `;
-
-        let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan (Cetak)</title>
-        <style>
-          body{font-family:Inter,Arial,sans-serif;margin:14mm}
-          h1{font-size:16pt;margin:0 0 4pt;text-align:center}
-          .sub{font-size:9pt;text-align:center;margin:0 0 8pt}
-          table{border-collapse:collapse;width:100%;font-size:10pt}
-          th,td{border:1px solid #aaa;padding:6pt;vertical-align:top}
-          .page-break{page-break-before:always}
-          .gallery img{max-width:100%;max-height:120pt;object-fit:contain}
-          @page{size:A4;margin:14mm}
-        </style></head><body>${headerBlock}`;
-
-        if (items.length === 0) {
-          html += "<p>(Tiada item)</p>";
-        } else {
-          items.forEach((it, idx) => {
-            if (idx > 0) html += '<div class="page-break"></div>' + headerBlock;
-            html += `
-              <table style="margin-top:8pt">
-                <tr><th style="width:50%">No: ${
-                  idx + 1
-                } &nbsp;&nbsp; Lokasi: ${esc(
-              it.lokasi || "-"
-            )}</th><th>Ulasan</th></tr>
-                <tr>
-                  <td class="gallery">${
-                    it.img ? `<img src="${it.img}">` : "(tiada gambar)"
-                  }</td>
-                  <td><ul>${esc(it.ulasan || "")
-                    .split(/\n+/)
-                    .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
-                    .join("")}</ul></td>
-                </tr>
-              </table>
-            `;
-          });
-        }
-        html += "</body></html>";
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
-
-        // Tunggu gambar dimuat sebelum cetak
-        const t = setInterval(() => {
-          const imgs = win.document.images;
-          let ok = true;
-          for (const im of imgs) {
-            if (!im.complete) {
-              ok = false;
-              break;
-            }
-          }
-          if (ok) {
-            clearInterval(t);
-            win.focus();
-            win.print();
-          }
-        }, 200);
-      }
-
-      // ===== init & mobile keyboard handling
-      loadForm();
-      refreshTable();
-      (function () {
-        const vp = document.querySelector('meta[name="viewport"]');
-        function lock() {
-          if (vp)
-            vp.setAttribute(
-              "content",
-              "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-            );
-        }
-        function unlock() {
-          if (vp)
-            vp.setAttribute(
-              "content",
-              "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-            );
-        }
-        document.addEventListener("focusin", (e) => {
-          if (/INPUT|TEXTAREA/.test(e.target.tagName)) lock();
-        });
-        document.addEventListener("focusout", (e) => {
-          if (/INPUT|TEXTAREA/.test(e.target.tagName)) unlock();
-        });
-        // if (window.visualViewport) {
-        //   const foot = $("section4"),
-        //     wrap = document.querySelector(".wrap");
-        //   const adjust = () => {
-        //     const vv = visualViewport;
-        //     const kb = Math.max(0, innerHeight - vv.height);
-        //     wrap.style.paddingBottom = (kb ? kb + 24 : 16) + "px";
-        //     if (foot) foot.style.marginBottom = (kb ? kb : 0) + "px";
-        //   };
-        //   visualViewport.addEventListener("resize", adjust);
-        //   visualViewport.addEventListener("scroll", adjust);
-        //   adjust();
-        // }
-      })();
-    </script>
-  </body>
-</html>
+            doc.setFont
