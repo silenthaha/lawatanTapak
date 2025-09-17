@@ -361,6 +361,7 @@
 
           <div>
             <label>Gambar (pilih Kamera atau Galeri)</label>
+            <div id="deviceInfo" style="font-size: 0.75rem; color: var(--muted); margin-bottom: 8px;"></div>
             <div class="btnbar">
               <input
                 id="fileCamera"
@@ -368,9 +369,8 @@
                 accept="image/*"
                 capture="environment"
                 hidden
-                multiple
               />
-              <input id="fileGallery" type="file" accept="image/*" hidden multiple />
+              <input id="fileGallery" type="file" accept="image/*" hidden />
               <button id="btnKamera" class="primary">📷 Kamera</button>
               <button id="btnGaleri" class="primary">🖼️ Galeri</button>
             </div>
@@ -484,8 +484,34 @@
         el.addEventListener("input", saveForm)
       );
 
-      // ===== Enhanced image handling for multiple images
-      const MAX_WIDTH = 1200;
+      // ===== Device detection for memory optimization
+      const isIOS = () => {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      };
+      
+      const isLowMemoryDevice = () => {
+        // Check for iOS or devices with limited memory
+        if (isIOS()) return true;
+        
+        // Check available memory (if supported)
+        if (navigator.deviceMemory && navigator.deviceMemory < 4) return true;
+        
+        // Check for older Android devices
+        const ua = navigator.userAgent.toLowerCase();
+        if (ua.includes('android') && ua.includes('mobile')) {
+          const androidVersion = ua.match(/android\s+([\d.]+)/);
+          if (androidVersion && parseFloat(androidVersion[1]) < 9.0) return true;
+        }
+        
+        return false;
+      };
+
+      // ===== Enhanced image handling with fallback
+      const MAX_WIDTH = isLowMemoryDevice() ? 800 : 1200; // Smaller for low memory
+      const MAX_IMAGES = isLowMemoryDevice() ? 1 : 10; // Single image for iOS/low memory
+      const JPEG_QUALITY = isLowMemoryDevice() ? 0.7 : 0.85; // Lower quality for iOS
+      
       const state = { images: [] };
       
       const fileToDataURL = (file) =>
@@ -503,8 +529,16 @@
               const cv = document.createElement("canvas");
               cv.width = w;
               cv.height = h;
-              cv.getContext("2d").drawImage(img, 0, 0, w, h);
-              resolve(cv.toDataURL("image/jpeg", 0.85));
+              const ctx = cv.getContext("2d");
+              
+              // Better compression for low memory devices
+              if (isLowMemoryDevice()) {
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'medium';
+              }
+              
+              ctx.drawImage(img, 0, 0, w, h);
+              resolve(cv.toDataURL("image/jpeg", JPEG_QUALITY));
             };
             img.onerror = reject;
             img.src = fr.result;
@@ -581,6 +615,27 @@
         });
       };
 
+      // Setup device-specific input attributes and info
+      const setupDeviceSpecificFeatures = () => {
+        const deviceInfo = $("deviceInfo");
+        const cameraInput = $("fileCamera");
+        const galleryInput = $("fileGallery");
+        
+        if (isLowMemoryDevice()) {
+          deviceInfo.textContent = "📱 Mode iPhone/Low Memory: 1 gambar sahaja, kualiti dioptimumkan";
+          deviceInfo.style.color = "var(--warn)";
+          // Single image mode for low memory devices
+          cameraInput.removeAttribute("multiple");
+          galleryInput.removeAttribute("multiple");
+        } else {
+          deviceInfo.textContent = "📱 Mode Android/High Memory: Sehingga 10 gambar, kualiti tinggi";
+          deviceInfo.style.color = "var(--ok)";
+          // Multiple images for high memory devices
+          cameraInput.setAttribute("multiple", "");
+          galleryInput.setAttribute("multiple", "");
+        }
+      };
+
       $("btnKamera").addEventListener("click", (e) => {
         e.preventDefault();
         $("fileCamera").click();
@@ -594,21 +649,52 @@
       async function onFilesPicked(files) {
         if (!files || files.length === 0) return;
         
-        const loadingToast = showToast("Memproses gambar...");
+        showToast("Memproses gambar...");
         
         try {
-          for (const file of Array.from(files)) {
-            if (state.images.length >= 10) {
-              showToast("Maksimum 10 gambar sahaja");
+          // For low memory devices, only process the first file
+          const filesToProcess = isLowMemoryDevice() ? [files[0]] : Array.from(files);
+          
+          // Clear existing images for low memory devices to save memory
+          if (isLowMemoryDevice()) {
+            state.images = [];
+          }
+          
+          for (const file of filesToProcess) {
+            if (state.images.length >= MAX_IMAGES) {
+              showToast(`Maksimum ${MAX_IMAGES} gambar sahaja`);
               break;
             }
             
-            const url = await fileToDataURL(file);
-            state.images.push(url);
+            // Check file size (limit for low memory devices)
+            const maxFileSize = isLowMemoryDevice() ? 5 * 1024 * 1024 : 10 * 1024 * 1024; // 5MB vs 10MB
+            if (file.size > maxFileSize) {
+              showToast(`Gambar terlalu besar. Max ${isLowMemoryDevice() ? '5MB' : '10MB'}`);
+              continue;
+            }
+            
+            try {
+              const url = await fileToDataURL(file);
+              state.images.push(url);
+              
+              // Force garbage collection hint for iOS
+              if (isLowMemoryDevice() && window.gc) {
+                window.gc();
+              }
+              
+            } catch (e) {
+              console.error("Failed to process image:", e);
+              showToast("Gagal proses gambar ini, cuba gambar lain");
+            }
           }
           
           updateImagePreview();
-          showToast(`${files.length} gambar ditambah`);
+          
+          if (isLowMemoryDevice()) {
+            showToast("Gambar ditambah (mode memory-optimized)");
+          } else {
+            showToast(`${filesToProcess.length} gambar ditambah`);
+          }
           
         } catch (e) {
           console.error(e);
@@ -1193,6 +1279,7 @@
         loadForm();
         refreshTable();
         setupIOSHandling();
+        setupDeviceSpecificFeatures(); // Setup device-specific features
         
         // Set today's date if not set
         if (!formEls.tarikh.value) {
@@ -1204,12 +1291,22 @@
         if (firstEmptyRequired) {
           setTimeout(() => firstEmptyRequired.focus(), 500);
         }
+        
+        // Show device info
+        console.log("Device detection:", {
+          isIOS: isIOS(),
+          isLowMemory: isLowMemoryDevice(),
+          maxImages: MAX_IMAGES,
+          maxWidth: MAX_WIDTH,
+          jpegQuality: JPEG_QUALITY
+        });
       });
 
       // Initialize immediately for better UX
       loadForm();
       refreshTable();
       setupIOSHandling();
+      setupDeviceSpecificFeatures();
     </script>
   </body>
 </html>
