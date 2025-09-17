@@ -111,6 +111,7 @@
         padding: 10px 14px;
         border-radius: 12px;
         font-weight: 600;
+        cursor: pointer;
       }
       button.primary {
         background: var(--accent);
@@ -187,6 +188,13 @@
       }
       .btn-ghost {
         background: transparent;
+        font-size: 0.8rem;
+        padding: 6px 10px;
+      }
+      .note {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 12px;
       }
       @media print {
         #section4,
@@ -204,7 +212,7 @@
     <div class="wrap">
       <h1>📋 Laporan Lawatan Tapak</h1>
       <div class="subtitle">
-        <!-- Mobile-first. Data kekal sehingga anda tekan <b>Simpan & Hantar</b>. -->
+        Borang mudah alih untuk laporan lawatan tapak. Data akan disimpan secara tempatan.
       </div>
 
       <!-- SECTION 1 -->
@@ -249,7 +257,7 @@
           </div>
         </div>
         <p class="note">
-          <!-- Medan bertanda * adalah wajib. Auto-simpan lokal sehingga dihantar. -->
+          Medan bertanda * adalah wajib. Data akan disimpan secara automatik.
         </p>
       </div>
 
@@ -294,21 +302,22 @@
         </div>
 
         <div class="btnbar" style="margin-top: 8px">
-          <button class="ok" id="btnSimpanData">Save2</button>
-          <button class="warn" id="btnClear">Reset</button>
+          <button class="ok" id="btnSimpanData">Simpan Item</button>
+          <button class="warn" id="btnClear">Set Semula</button>
         </div>
       </div>
 
       <!-- SECTION 3 (list) -->
       <div class="card" id="section3">
-        <!-- <h2>Section 3 — Senarai Item</h2> -->
+        <h2>Senarai Item Disimpan</h2>
         <div id="entriesWrap"></div>
             <table class="table" id="entriesTable">
             <thead>
                 <tr>
-                <th style="width: 28%">Gambar</th>
-                <th>Lokasi</th>
-                <th>Ulasan</th>
+                <th style="width: 25%">Gambar</th>
+                <th style="width: 20%">Lokasi</th>
+                <th style="width: 45%">Ulasan</th>
+                <th style="width: 10%">Tindakan</th>
                 </tr>
             </thead>
             <tbody id="entriesBody">
@@ -321,7 +330,6 @@
     </div>
       <!-- SECTION 4 (only Simpan & Hantar) -->
       <div class="card sticky-footer" id="section4">
-        <!-- <h2>Section 4 — Simpan & Hantar</h2> -->
         <div class="btnbar">
           <button id="btnSubmit" class="danger">Simpan & Hantar</button>
         </div>
@@ -479,6 +487,14 @@
         writeEntries(arr);
         refreshTable();
         showToast("Item ditambah");
+        
+        // Reset form
+        // $("lokasi").value = "";
+        // $("ulasan").value = "";
+        // state.imgData = "";
+        // $("preview").style.display = "none";
+        // $("fileCamera").value = "";
+        // $("fileGallery").value = "";
       });
 
       $("btnClear").addEventListener("click", () => {
@@ -716,10 +732,17 @@
         const required = ["namaProjek", "perkara", "tarikh", "email"];
         for (const k of required) {
           if (!formEls[k].value.trim()) {
-            alert("Sila lengkapkan semua medan wajib di Section 1.");
+            alert("Sila lengkapkan semua medan wajib di Bahagian 1.");
             return;
           }
         }
+        
+        const items = readEntries();
+        if (items.length === 0) {
+          alert("Sila tambah sekurang-kurangnya satu item lokasi di Bahagian 2.");
+          return;
+        }
+        
         await shareOrPrint();
         // bersih data
         localStorage.removeItem(LS_KEYS.entries);
@@ -745,7 +768,21 @@
             /[&<>]/g,
             (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])
           );
-        const head = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan (Cetak)</title>
+        
+        const headerBlock = `
+          <h1>LAPORAN LAWATAN TAPAK</h1>
+          <div class="sub">Dijana: ${new Date().toLocaleString()}</div>
+          <table style="width:100%; margin-bottom:20px">
+            <tr><td><strong>Nama Projek:</strong></td><td>${esc(form.namaProjek)}</td></tr>
+            <tr><td><strong>Perkara:</strong></td><td>${esc(form.perkara)}</td></tr>
+            <tr><td><strong>Tarikh:</strong></td><td>${esc(form.tarikh)}</td></tr>
+            <tr><td><strong>Nama Bangunan:</strong></td><td>${esc(form.namaBangunan)}</td></tr>
+            <tr><td><strong>Email:</strong></td><td>${esc(form.email)}</td></tr>
+          </table>
+          <hr>
+        `;
+
+        let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan (Cetak)</title>
         <style>
           body{font-family:Inter,Arial,sans-serif;margin:14mm}
           h1{font-size:16pt;margin:0 0 4pt;text-align:center}
@@ -753,58 +790,41 @@
           table{border-collapse:collapse;width:100%;font-size:10pt}
           th,td{border:1px solid #aaa;padding:6pt;vertical-align:top}
           .page-break{page-break-before:always}
-          .gallery img{width:100%;height:120pt;object-fit:cover}
+          .gallery img{max-width:100%;max-height:120pt;object-fit:contain}
           @page{size:A4;margin:14mm}
-        </style></head><body>`;
-    const info = `
-      <div class="row"><span class="label">Nama Projek:</span> ${esc(
-        form.namaProjek
-      )}</div>
-      <div class="row"><span class="label">Perkara:</span> ${esc(
-        form.perkara
-      )}</div>
-      <div class="row"><span class="label">Tarikh:</span> ${esc(
-        form.tarikh
-      )}</div>
-      <div class="row"><span class="label">Nama Bangunan:</span> ${esc(
-        form.namaBangunan
-      )}</div>
-      <div class="row"><span class="label">Email:</span> ${esc(
-        form.email
-      )}</div>
-      <hr>
-    `;
-
-        let body = `${head}<h1>LAPORAN LAWATAN TAPAK</h1><div class="sub">Dijana: ${new Date().toLocaleString()}</div>${info}`;
-        let html = head + headerBlock;
+        </style></head><body>${headerBlock}`;
+        
         if (items.length === 0) {
           html += "<p>(Tiada item)</p>";
+        } else {
+          items.forEach((it, idx) => {
+            if (idx > 0) html += '<div class="page-break"></div>' + headerBlock;
+            html += `
+              <table style="margin-top:8pt">
+                <tr><th style="width:50%">No: ${
+                  idx + 1
+                } &nbsp;&nbsp; Lokasi: ${esc(
+              it.lokasi || "-"
+            )}</th><th>Ulasan</th></tr>
+                <tr>
+                  <td class="gallery">${
+                    it.img ? `<img src="${it.img}">` : "(tiada gambar)"
+                  }</td>
+                  <td><ul>${esc(it.ulasan || "")
+                    .split(/\n+/)
+                    .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
+                    .join("")}</ul></td>
+                </tr>
+              </table>
+            `;
+          });
         }
-        items.forEach((it, idx) => {
-          if (idx > 0) html += '<div class="page-break"></div>' + headerBlock;
-          html += `
-            <table style="margin-top:8pt">
-              <tr><th style="width:50%">No: ${
-                idx + 1
-              } &nbsp;&nbsp; Lokasi: ${esc(
-            it.lokasi || "-"
-          )}</th><th>Ulasan</th></tr>
-              <tr>
-                <td class="gallery">${
-                  it.img ? `<img src="${it.img}">` : "(tiada gambar)"
-                }</td>
-                <td><ul>${esc(it.ulasan || "")
-                  .split(/\n+/)
-                  .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
-                  .join("")}</ul></td>
-              </tr>
-            </table>
-          `;
-        });
         html += "</body></html>";
         win.document.open();
         win.document.write(html);
         win.document.close();
+        
+        // Tunggu gambar dimuat sebelum cetak
         const t = setInterval(() => {
           const imgs = win.document.images;
           let ok = true;
