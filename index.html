@@ -515,7 +515,7 @@
           // Tajuk
           doc.setFont("helvetica", "bold");
           doc.setFontSize(16);
-          doc.text("LAPORAN • LAWATAN • TAPAK", W / 2, y, { align: "center" });
+          doc.text("LAPORAN  LAWATAN  TAPAK", W / 2, y, { align: "center" });
           y += 16;
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
@@ -525,32 +525,30 @@
           y += 14;
 
           // Jadual Maklumat Asas | Butiran
-          y += 6;
-          const rowH = 22;
-          doc.setDrawColor(120);
-          doc.setLineWidth(0.7);
-          doc.rect(M, y, W - M * 2, rowH * 2);
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(11);
-          doc.text("Maklumat Asas", M + 8, y + 15);
-          doc.text("Butiran", W / 2 + 8, y + 15);
-          doc.line(M, y + rowH, W - M, y + rowH);
-
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(10.5);
-          doc.text("Tarikh", M + 8, y + rowH + 14 - 6);
-          doc.text(String(form.tarikh || "-"), W / 2 + 8, y + rowH + 14 - 6);
-          doc.line(M, y + rowH * 2, W - M, y + rowH * 2);
-          doc.text("Lokasi", M + 8, y + rowH * 2 + 14 - 6);
-          doc.text(
-            String(form.namaBangunan || "-"),
-            W / 2 + 8,
-            y + rowH * 2 + 14 - 6
-          );
+          doc.setFontSize(10);
+          const info = [
+            [`Nama Projek:`, form.namaProjek || "-"],
+            [`Perkara:`, form.perkara || "-"],
+            [`Tarikh:`, form.tarikh || "-"],
+            [`Nama Bangunan:`, form.namaBangunan || "-"],
+            [`Email:`, form.email || "-"],
+          ];
 
-          y += rowH * 2 + 10;
-          hRule();
-          y += 8;
+          info.forEach(([label, value]) => {
+            doc.setFont("helvetica", "bold");
+            doc.text(label, M, y);
+            doc.setFont("helvetica", "normal");
+            doc.text(value, M + 80, y);
+            y += 12;
+          });
+
+          // Separator line
+          y += 5;
+          doc.setDrawColor(100);
+          doc.setLineWidth(0.5);
+          doc.line(M, y, W - M, y);
+          y += 15;
         }
 
         async function drawItem(it, idx) {
@@ -573,8 +571,8 @@
           doc.rect(rightX, y, boxW, headH);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(10.5);
-          doc.text(`No: ${idx + 1}`, leftX + 8, y + 14);
-          doc.text(`Lokasi: ${String(it.lokasi || "-")}`, leftX + 70, y + 14, {
+          // doc.text(`No: ${idx + 1}`, leftX + 8, y + 14);
+          doc.text(`${idx + 1}. Lokasi: ${String(it.lokasi || "-")}`, leftX + 8, y + 14, {
             maxWidth: boxW - 78,
           });
           doc.text("Ulasan:", rightX + 8, y + 14);
