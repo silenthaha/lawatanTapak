@@ -175,17 +175,17 @@
         display: none;
         z-index: 5;
       }
-      .sticky-footer {
-        position: sticky;
+      /* .sticky-footer {
+        position: fixed;
         bottom: 0;
-        padding-top: 8px;
+        padding: 8px;
         background: linear-gradient(
           180deg,
           rgba(11, 18, 32, 0) 0%,
           rgba(11, 18, 32, 0.85) 20%,
           rgba(11, 18, 32, 1) 60%
         );
-      }
+      } */
       .btn-ghost {
         background: transparent;
         font-size: 0.8rem;
@@ -212,7 +212,8 @@
     <div class="wrap">
       <h1>📋 Laporan Lawatan Tapak</h1>
       <div class="subtitle">
-        Borang mudah alih untuk laporan lawatan tapak. Data akan disimpan secara tempatan.
+        Borang mudah alih untuk laporan lawatan tapak. Data akan disimpan secara
+        tempatan.
       </div>
 
       <!-- SECTION 1 -->
@@ -311,25 +312,24 @@
       <div class="card" id="section3">
         <h2>Senarai Item Disimpan</h2>
         <div id="entriesWrap"></div>
-            <table class="table" id="entriesTable">
-            <thead>
-                <tr>
-                <th style="width: 25%">Gambar</th>
-                <th style="width: 20%">Lokasi</th>
-                <th style="width: 45%">Ulasan</th>
-                <th style="width: 10%">Tindakan</th>
-                </tr>
-            </thead>
-            <tbody id="entriesBody">
-                <tr>
-                <td class="tmuted" colspan="4">Tiada data.</td>
-                </tr>
-            </tbody>
-            </table>
-        </div>
-    </div>
+        <table class="table" id="entriesTable">
+          <thead>
+            <tr>
+              <th style="width: 25%">Gambar</th>
+              <th style="width: 20%">Lokasi</th>
+              <th style="width: 45%">Ulasan</th>
+              <th style="width: 10%">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="entriesBody">
+            <tr>
+              <td class="tmuted" colspan="4">Tiada data.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <!-- SECTION 4 (only Simpan & Hantar) -->
-      <div class="card sticky-footer" id="section4">
+      <div class="card" id="section4">
         <div class="btnbar">
           <button id="btnSubmit" class="danger">Simpan & Hantar</button>
         </div>
@@ -487,7 +487,7 @@
         writeEntries(arr);
         refreshTable();
         showToast("Item ditambah");
-        
+
         // Reset form
         // $("lokasi").value = "";
         // $("ulasan").value = "";
@@ -736,13 +736,15 @@
             return;
           }
         }
-        
+
         const items = readEntries();
         if (items.length === 0) {
-          alert("Sila tambah sekurang-kurangnya satu item lokasi di Bahagian 2.");
+          alert(
+            "Sila tambah sekurang-kurangnya satu item lokasi di Bahagian 2."
+          );
           return;
         }
-        
+
         await shareOrPrint();
         // bersih data
         localStorage.removeItem(LS_KEYS.entries);
@@ -768,15 +770,23 @@
             /[&<>]/g,
             (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])
           );
-        
+
         const headerBlock = `
           <h1>LAPORAN LAWATAN TAPAK</h1>
           <div class="sub">Dijana: ${new Date().toLocaleString()}</div>
           <table style="width:100%; margin-bottom:20px">
-            <tr><td><strong>Nama Projek:</strong></td><td>${esc(form.namaProjek)}</td></tr>
-            <tr><td><strong>Perkara:</strong></td><td>${esc(form.perkara)}</td></tr>
-            <tr><td><strong>Tarikh:</strong></td><td>${esc(form.tarikh)}</td></tr>
-            <tr><td><strong>Nama Bangunan:</strong></td><td>${esc(form.namaBangunan)}</td></tr>
+            <tr><td><strong>Nama Projek:</strong></td><td>${esc(
+              form.namaProjek
+            )}</td></tr>
+            <tr><td><strong>Perkara:</strong></td><td>${esc(
+              form.perkara
+            )}</td></tr>
+            <tr><td><strong>Tarikh:</strong></td><td>${esc(
+              form.tarikh
+            )}</td></tr>
+            <tr><td><strong>Nama Bangunan:</strong></td><td>${esc(
+              form.namaBangunan
+            )}</td></tr>
             <tr><td><strong>Email:</strong></td><td>${esc(form.email)}</td></tr>
           </table>
           <hr>
@@ -793,7 +803,7 @@
           .gallery img{max-width:100%;max-height:120pt;object-fit:contain}
           @page{size:A4;margin:14mm}
         </style></head><body>${headerBlock}`;
-        
+
         if (items.length === 0) {
           html += "<p>(Tiada item)</p>";
         } else {
@@ -823,7 +833,7 @@
         win.document.open();
         win.document.write(html);
         win.document.close();
-        
+
         // Tunggu gambar dimuat sebelum cetak
         const t = setInterval(() => {
           const imgs = win.document.images;
@@ -867,19 +877,19 @@
         document.addEventListener("focusout", (e) => {
           if (/INPUT|TEXTAREA/.test(e.target.tagName)) unlock();
         });
-        if (window.visualViewport) {
-          const foot = $("section4"),
-            wrap = document.querySelector(".wrap");
-          const adjust = () => {
-            const vv = visualViewport;
-            const kb = Math.max(0, innerHeight - vv.height);
-            wrap.style.paddingBottom = (kb ? kb + 24 : 16) + "px";
-            if (foot) foot.style.marginBottom = (kb ? kb : 0) + "px";
-          };
-          visualViewport.addEventListener("resize", adjust);
-          visualViewport.addEventListener("scroll", adjust);
-          adjust();
-        }
+        // if (window.visualViewport) {
+        //   const foot = $("section4"),
+        //     wrap = document.querySelector(".wrap");
+        //   const adjust = () => {
+        //     const vv = visualViewport;
+        //     const kb = Math.max(0, innerHeight - vv.height);
+        //     wrap.style.paddingBottom = (kb ? kb + 24 : 16) + "px";
+        //     if (foot) foot.style.marginBottom = (kb ? kb : 0) + "px";
+        //   };
+        //   visualViewport.addEventListener("resize", adjust);
+        //   visualViewport.addEventListener("scroll", adjust);
+        //   adjust();
+        // }
       })();
     </script>
   </body>
