@@ -294,7 +294,7 @@
         </div>
 
         <div class="btnbar" style="margin-top: 8px">
-          <button class="ok" id="btnSimpanData">Save1</button>
+          <button class="ok" id="btnSimpanData">Save2</button>
           <button class="warn" id="btnClear">Reset</button>
         </div>
       </div>
@@ -552,74 +552,115 @@
         }
 
         async function drawItem(it, idx) {
-          const minNeeded = 240; // anggaran minimum untuk satu item
+          const minNeeded = 280;
           if (y + minNeeded > H - M) {
             doc.addPage();
             drawHeader();
           }
 
-          const leftX = M,
-            rightX = W / 2,
-            boxW = (W - M * 2) / 2,
-            headH = 22,
-            imgH = 160;
+          const leftW = (W - M * 2) * 0.45;
+          const rightW = (W - M * 2) * 0.55;
+          const rightX = M + leftW + 10;
+          const itemH = 200;
 
-          // Kepala: No + Lokasi | Ulasan
-          doc.setDrawColor(150);
-          doc.setLineWidth(0.6);
-          doc.rect(leftX, y, boxW, headH);
-          doc.rect(rightX, y, boxW, headH);
+          // Item header
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(10.5);
-          // doc.text(`No: ${idx + 1}`, leftX + 8, y + 14);
-          doc.text(`${idx + 1}. Lokasi: ${String(it.lokasi || "-")}`, leftX + 8, y + 14, {
-            maxWidth: boxW - 78,
-          });
-          doc.text("Ulasan:", rightX + 8, y + 14);
-          y += headH;
+          doc.setFontSize(11);
+          doc.text(`${idx + 1}. Lokasi: ${it.lokasi || "Bilik TCR"}`, M, y);
+          y += 15;
 
-          // Kiri: gambar
+          // Create table-like structure with borders
+          doc.setDrawColor(0);
+          doc.setLineWidth(0.8);
+
+          // Left box for image
+          doc.rect(M, y, leftW, itemH);
+
+          // Right box for comments
+          doc.rect(rightX, y, rightW, itemH);
+
+          // Add image
           if (it.img) {
-            const dim = await new Promise((res) => {
-              const im = new Image();
-              im.onload = () =>
-                res({ w: im.naturalWidth || 1200, h: im.naturalHeight || 800 });
-              im.src = it.img;
-            });
-            const ratio = dim.h / dim.w;
-            const dw = boxW - 10;
-            const dh = Math.min(imgH, dw * ratio);
-            doc.rect(leftX, y, boxW, imgH);
-            doc.addImage(
-              it.img,
-              "JPEG",
-              leftX + 5,
-              y + 5,
-              dw,
-              dh,
-              undefined,
-              "FAST"
-            );
+            try {
+              const dim = await new Promise((res) => {
+                const im = new Image();
+                im.onload = () =>
+                  res({
+                    w: im.naturalWidth || 1200,
+                    h: im.naturalHeight || 800,
+                  });
+                im.onerror = () => res({ w: 1200, h: 800 });
+                im.src = it.img;
+              });
+
+              const ratio = dim.h / dim.w;
+              const maxW = leftW - 10;
+              const maxH = itemH - 10;
+              let imgW = maxW;
+              let imgH = maxW * ratio;
+
+              if (imgH > maxH) {
+                imgH = maxH;
+                imgW = maxH / ratio;
+              }
+
+              const imgX = M + 5 + (maxW - imgW) / 2;
+              const imgY = y + 5 + (maxH - imgH) / 2;
+
+              doc.addImage(
+                it.img,
+                "JPEG",
+                imgX,
+                imgY,
+                imgW,
+                imgH,
+                undefined,
+                "FAST"
+              );
+            } catch (e) {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(10);
+              doc.text(
+                "(gambar tidak dapat dimuatkan)",
+                M + leftW / 2,
+                y + itemH / 2,
+                {
+                  align: "center",
+                }
+              );
+            }
           } else {
-            doc.rect(leftX, y, boxW, imgH);
             doc.setFont("helvetica", "italic");
             doc.setFontSize(10);
-            doc.text("(tiada gambar)", leftX + boxW / 2, y + imgH / 2, {
+            doc.text("(tiada gambar)", M + leftW / 2, y + itemH / 2, {
               align: "center",
             });
           }
 
-          // Kanan: Ulasan sahaja
-          doc.rect(rightX, y, boxW, imgH);
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10.5);
-          const bullets = String(it.ulasan || "")
-            .split(/\n+/)
-            .map((s) => "• " + s.replace(/^•\s*/, ""));
-          const wrapped = doc.splitTextToSize(bullets.join("\n"), boxW - 10);
-          doc.text(wrapped, rightX + 6, y + 14);
+          // Add comments header
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text("Ulasan:", rightX + 8, y + 15);
 
-          y += imgH + 8;
+          // Add comments content
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          if (it.ulasan) {
+            const bullets = it.ulasan
+              .split(/\n+/)
+              .filter((line) => line.trim())
+              .map((s) => "• " + s.replace(/^•\s*/, ""));
+            const wrapped = doc.splitTextToSize(
+              bullets.join("\n"),
+              rightW - 16
+            );
+            doc.text(wrapped, rightX + 8, y + 30);
+          } else {
+            doc.setFont("helvetica", "italic");
+            doc.text("(tiada ulasan)", rightX + 8, y + 30);
+          }
+
+          y += itemH + 15;
         }
 
         // Header mula
