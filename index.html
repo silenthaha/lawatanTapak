@@ -22,7 +22,7 @@
         --text: #e7eefc;
         --muted: #8aa0c6;
         --accent: #4f8cff;
-        --ok: #4f8cff;  
+        --ok: #4f8cff;
         --warn: #4f8cff;
         --danger: #4f8cff;
         --border: #1d2942;
@@ -58,7 +58,7 @@
         font-size: 1.35rem;
         margin: 0 0 8px;
       }
-       h2 {
+      h2 {
         font-size: 1.35rem;
         margin: 0 0 8px;
       }
@@ -271,9 +271,7 @@
             />
           </div>
         </div>
-        <p class="note">
-          Medan bertanda * adalah wajib diisi.
-        </p>
+        <p class="note">Medan bertanda * adalah wajib diisi.</p>
       </div>
 
       <!-- SECTION 2 (Item input) -->
@@ -323,27 +321,27 @@
 
           <div>
             <label>Ulasan</label>
-            <div class="input-wrap"> 
-            <textarea
-              id="ulasan"
-              placeholder="• Kabel network UTP 6A...&#10;• Tray fiber rapi..."
-            ></textarea>
-            <button
+            <div class="input-wrap">
+              <textarea
+                id="ulasan"
+                placeholder="• Kabel network UTP 6A...&#10;• Tray fiber rapi..."
+              ></textarea>
+              <button
                 type="button"
                 class="clear-btn"
                 onclick="document.getElementById('ulasan').value=''"
               >
                 x
               </button>
+            </div>
+          </div>
+
+          <div class="btnbar" style="margin-top: 8px">
+            <button class="ok" id="btnSimpanData">Simpan Item</button>
+            <button class="warn" id="btnClear">Set Semula</button>
           </div>
         </div>
-
-        <div class="btnbar" style="margin-top: 8px">
-          <button class="ok" id="btnSimpanData">Simpan Item</button>
-          <button class="warn" id="btnClear">Set Semula</button>
-        </div>
       </div>
-
       <!-- SECTION 3 (list) -->
       <div class="card" id="section3">
         <h2>Senarai Item</h2>
@@ -368,9 +366,7 @@
       <!-- SECTION 4 (actions) -->
       <div class="card" id="section4">
         <div class="btnbar">
-          <button id="btnSavePDFLocal" class="ok">
-            Muat Turun PDF
-          </button>
+          <button id="btnSavePDFLocal" class="ok">Muat Turun PDF</button>
           <button id="btnSubmit" class="danger">Hantar</button>
         </div>
         <!-- <div class="note">
