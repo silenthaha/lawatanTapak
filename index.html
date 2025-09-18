@@ -22,9 +22,9 @@
         --text: #e7eefc;
         --muted: #8aa0c6;
         --accent: #4f8cff;
-        --ok: #17d19b;
-        --warn: #ffcc66;
-        --danger: #ff647c;
+        --ok: #4f8cff;
+        --warn: #4f8cff;
+        --danger: #4f8cff;
         --border: #1d2942;
       }
       * {
@@ -58,6 +58,10 @@
         font-size: 1.35rem;
         margin: 0 0 8px;
       }
+      h2 {
+        font-size: 1.35rem;
+        margin: 0 0 8px;
+      }
       .subtitle {
         color: var(--muted);
         font-size: 0.9rem;
@@ -86,6 +90,20 @@
         color: var(--muted);
         display: block;
         margin-bottom: 6px;
+      }
+      .input-wrap {
+        position: relative;
+      }
+      .input-wrap button.clear-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        font-size: 1rem;
+        cursor: pointer;
       }
       input,
       textarea,
@@ -124,7 +142,7 @@
       button.primary {
         background: var(--accent);
         border-color: transparent;
-        color: #fff;
+        color: #051b11;
       }
       button.ok {
         background: var(--ok);
@@ -139,7 +157,7 @@
       button.danger {
         background: var(--danger);
         border-color: transparent;
-        color: #fff;
+        color: #051b11;
       }
       .thumb {
         display: block;
@@ -253,9 +271,7 @@
             />
           </div>
         </div>
-        <p class="note">
-          Medan bertanda * adalah wajib. Data akan disimpan secara automatik.
-        </p>
+        <p class="note">Medan bertanda * adalah wajib diisi.</p>
       </div>
 
       <!-- SECTION 2 (Item input) -->
@@ -264,11 +280,20 @@
         <div class="row">
           <div>
             <label>Nama bilik / lokasi</label>
-            <input id="lokasi" placeholder="cth: Bilik TCR 1" />
+            <div class="input-wrap">
+              <input id="lokasi" placeholder="cth: Bilik TCR 1" />
+              <button
+                type="button"
+                class="clear-btn"
+                onclick="document.getElementById('lokasi').value=''"
+              >
+                x
+              </button>
+            </div>
           </div>
 
           <div>
-            <label>Gambar (pilih Kamera atau Galeri)</label>
+            <label>Gambar</label>
             <div class="btnbar">
               <input
                 id="fileCamera"
@@ -287,36 +312,44 @@
               alt="Pratonton"
               style="display: none; margin-top: 8px"
             />
-            <div class="note">
+            <!-- <div class="note">
               * Semua gambar akan dikecilkan ke bentuk
               <strong>thumbnail</strong> (~480px lebar, JPEG kualiti 0.7) untuk
               memuat banyak item pada iPhone & Android.
-            </div>
+            </div> -->
           </div>
 
           <div>
-            <label>Ulasan (bullet atau baris baharu)</label>
-            <textarea
-              id="ulasan"
-              placeholder="• Kabel network UTP 6A...&#10;• Tray fiber rapi..."
-            ></textarea>
+            <label>Ulasan</label>
+            <div class="input-wrap">
+              <textarea
+                id="ulasan"
+                placeholder="• Kabel network UTP 6A...&#10;• Tray fiber rapi..."
+              ></textarea>
+              <button
+                type="button"
+                class="clear-btn"
+                onclick="document.getElementById('ulasan').value=''"
+              >
+                x
+              </button>
+            </div>
+          </div>
+
+          <div class="btnbar" style="margin-top: 8px">
+            <button class="ok" id="btnSimpanData">Simpan Item</button>
+            <button class="warn" id="btnClear">Set Semula</button>
           </div>
         </div>
-
-        <div class="btnbar" style="margin-top: 8px">
-          <button class="ok" id="btnSimpanData">Simpan Item</button>
-          <button class="warn" id="btnClear">Set Semula</button>
-        </div>
       </div>
-
       <!-- SECTION 3 (list) -->
       <div class="card" id="section3">
-        <h2>Senarai Item Disimpan</h2>
+        <h2>Senarai Item</h2>
         <div id="entriesWrap"></div>
         <table class="table" id="entriesTable">
           <thead>
             <tr>
-              <th style="width: 25%">Gambar (thumb)</th>
+              <th style="width: 25%">Gambar</th>
               <th style="width: 20%">Lokasi</th>
               <th style="width: 45%">Ulasan</th>
               <th style="width: 10%">Tindakan</th>
@@ -333,16 +366,14 @@
       <!-- SECTION 4 (actions) -->
       <div class="card" id="section4">
         <div class="btnbar">
-          <button id="btnSavePDFLocal" class="ok">
-            💾 Simpan PDF (Muat Turun)
-          </button>
-          <button id="btnSubmit" class="danger">Simpan & Hantar</button>
+          <button id="btnSavePDFLocal" class="ok">Muat Turun PDF</button>
+          <button id="btnSubmit" class="danger">Hantar</button>
         </div>
-        <div class="note">
+        <!-- <div class="note">
           "Simpan PDF (Muat Turun)" memaksa muat turun ke storan
           telefon/komputer (iOS: Files). "Simpan & Hantar" cuba menggunakan
           Share Sheet jika disokong, kemudian fallback muat turun.
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -861,8 +892,7 @@
       }
 
       // ===== init & mobile keyboard handling
-      loadForm();
-      refreshTable();
+
       (function () {
         const vp = document.querySelector('meta[name="viewport"]');
         function lock() {
@@ -885,20 +915,9 @@
         document.addEventListener("focusout", (e) => {
           if (/INPUT|TEXTAREA/.test(e.target.tagName)) unlock();
         });
-        if (window.visualViewport) {
-          const foot = $("section4"),
-            wrap = document.querySelector(".wrap");
-          const adjust = () => {
-            const vv = visualViewport;
-            const kb = Math.max(0, innerHeight - vv.height);
-            wrap.style.paddingBottom = (kb ? kb + 24 : 16) + "px";
-            if (foot) foot.style.marginBottom = (kb ? kb : 0) + "px";
-          };
-          visualViewport.addEventListener("resize", adjust);
-          visualViewport.addEventListener("scroll", adjust);
-          adjust();
-        }
       })();
+      loadForm();
+      refreshTable();
     </script>
   </body>
 </html>
