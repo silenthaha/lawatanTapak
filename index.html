@@ -534,29 +534,27 @@
       });
 
       // ===== PDF builder (guna thumbnail; ulang Maklumat Asas di setiap page)
-   // ======================================
-// PDF BUILDER (Versi Kemas + Watermark + Page Number)
-// ======================================
+// =======================================================
+// PDF BUILDER (Versi Lengkap + Footer "x/y" + Watermark)
+// =======================================================
 async function buildPDF() {
   if (!window.jspdf || !window.jspdf.jsPDF)
     throw new Error("jsPDF tidak dimuatkan");
 
   const { jsPDF } = window.jspdf;
 
-  // Setup asas
   const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
-  const M = 36; // margin
+  const M = 36;
   let y = M;
 
-  // Data
   const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
   const items = readEntries();
 
-  // ==========================
-  //  WATERMARK
-  // ==========================
+  // ====================================
+  // Watermark (tetap pada setiap page)
+  // ====================================
   function drawWatermark() {
     doc.saveGraphicsState();
     doc.setGState(new doc.GState({ opacity: 0.06 }));
@@ -573,31 +571,25 @@ async function buildPDF() {
     doc.restoreGraphicsState();
   }
 
-  // ==========================
-  //  HEADER (setiap halaman)
-  // ==========================
-  function drawHeader(pageNo, totalPages) {
+  // ====================================
+  // Header Setiap Halaman
+  // ====================================
+  function drawHeader() {
     y = M;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(15);
     doc.text("LAPORAN LAWATAN TAPAK", W / 2, y, { align: "center" });
-    y += 18;
+    y += 20;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text(`Dijana: ${new Date().toLocaleString()}`, W / 2, y, {
       align: "center",
     });
-    y += 14;
+    y += 16;
 
-    // Page numbering
-    doc.setFontSize(9);
-    doc.text(`Halaman ${pageNo} / ${totalPages}`, W - M, M, {
-      align: "right",
-    });
-
-    // Info table
+    // Maklumat asas
     const info = [
       ["Nama Projek:", form.namaProjek || "-"],
       ["Perkara:", form.perkara || "-"],
@@ -618,21 +610,21 @@ async function buildPDF() {
     doc.setDrawColor(120);
     doc.setLineWidth(0.6);
     doc.line(M, y, W - M, y);
-    y += 14;
+    y += 16;
   }
 
-  // ==========================
-  //  GAMBAR + ULASAN PER ITEM
-  // ==========================
+  // ====================================
+  // Item (gambar + ulasan)
+  // ====================================
   async function drawItem(it, idx) {
-    const boxHeight = 180;
-    const minNeeded = boxHeight + 40;
+    const itemHeight = 180;
+    const need = itemHeight + 40;
 
-    // Jika tak cukup ruang → page baru
-    if (y + minNeeded > H - M) {
+    // Page break bila ruang tidak cukup
+    if (y + need > H - M) {
       doc.addPage();
       drawWatermark();
-      drawHeader(doc.internal.getNumberOfPages(), totalPages);
+      drawHeader();
     }
 
     // Tajuk item
@@ -641,20 +633,19 @@ async function buildPDF() {
     doc.text(`${idx + 1}. Lokasi: ${it.lokasi || "-"}`, M, y);
     y += 14;
 
-    // Kolum kiri/kanan
     const leftW = (W - M * 2) * 0.45;
     const rightW = (W - M * 2) * 0.55;
     const rightX = M + leftW + 10;
 
-    // Kotak
+    // Kotak kiri/kanan
     doc.setDrawColor(0);
     doc.setLineWidth(0.8);
-    doc.rect(M, y, leftW, boxHeight);
-    doc.rect(rightX, y, rightW, boxHeight);
+    doc.rect(M, y, leftW, itemHeight);
+    doc.rect(rightX, y, rightW, itemHeight);
 
-    // ==========================
-    //  GAMBAR
-    // ==========================
+    // -------------------------
+    // Gambar
+    // -------------------------
     if (it.img) {
       try {
         const dim = await new Promise((res) => {
@@ -667,7 +658,7 @@ async function buildPDF() {
 
         const ratio = dim.h / dim.w;
         const maxW = leftW - 12;
-        const maxH = boxHeight - 12;
+        const maxH = itemHeight - 12;
 
         let imgW = maxW;
         let imgH = imgW * ratio;
@@ -678,65 +669,69 @@ async function buildPDF() {
         }
 
         const imgX = M + (leftW - imgW) / 2;
-        const imgY = y + (boxHeight - imgH) / 2;
+        const imgY = y + (itemHeight - imgH) / 2;
 
-        doc.addImage(
-          it.img,
-          "JPEG",
-          imgX,
-          imgY,
-          imgW,
-          imgH,
-          undefined,
-          "FAST"
-        );
+        doc.addImage(it.img, "JPEG", imgX, imgY, imgW, imgH);
       } catch {
         doc.setFont("helvetica", "italic");
         doc.setFontSize(10);
-        doc.text("(gambar gagal dimuatkan)", M + leftW / 2, y + boxHeight / 2, {
+        doc.text("(gambar gagal dimuatkan)", M + leftW / 2, y + itemHeight / 2, {
           align: "center",
         });
       }
     } else {
       doc.setFont("helvetica", "italic");
       doc.setFontSize(10);
-      doc.text("(tiada gambar)", M + leftW / 2, y + boxHeight / 2, {
+      doc.text("(tiada gambar)", M + leftW / 2, y + itemHeight / 2, {
         align: "center",
       });
     }
 
-    // ==========================
-    //  ULASAN
-    // ==========================
+    // -------------------------
+    // Ulasan
+    // -------------------------
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text("Ulasan:", rightX + 8, y + 14);
 
     doc.setFont("helvetica", "normal");
-    const bulletLines = (it.ulasan || "")
+    const lines = (it.ulasan || "")
       .split(/\n+/)
       .map((t) => "• " + t.replace(/^•\s*/, ""));
 
-    const wrapped = doc.splitTextToSize(bulletLines.join("\n"), rightW - 20);
+    const wrapped = doc.splitTextToSize(lines.join("\n"), rightW - 20);
     doc.text(wrapped, rightX + 8, y + 28);
 
-    y += boxHeight + 16;
+    y += itemHeight + 20;
   }
 
-  // ==========================
-  //  BUILD PDF
-  // ==========================
-  const totalPages = Math.max(1, Math.ceil(items.length / 2)); // anggaran awal
+  // ====================================
+  // Generate PDF
+  // ====================================
   drawWatermark();
-  drawHeader(1, totalPages);
+  drawHeader();
 
   for (let i = 0; i < items.length; i++) {
     await drawItem(items[i], i);
   }
 
+  // ====================================
+  // FOOTER "x/y"
+  // ====================================
+  function addFooter(pageNumber, total) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`${pageNumber}/${total}`, W / 2, H - 20, { align: "center" });
+  }
+
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    addFooter(p, totalPages);
+  }
+
   return doc;
 }
-
 
       // ===== Simpan PDF (paksa muat turun tempatan)
       async function savePDFLocal() {
