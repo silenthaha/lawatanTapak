@@ -121,12 +121,13 @@
           font-size: clamp(12px, 2.5vw, 14px);
         }
       }
-   .btn-delete {
-  background: transparent;
-  border: none;
-  font-size: 1.3rem;
-  cursor: pointer;
-}
+      .btn-delete {
+        background: transparent;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        align-items: center;
+      }
 
       .btn-delete:hover {
         color: var(--accent);
@@ -543,7 +544,7 @@
           const tAct = document.createElement("td");
           const del = document.createElement("button");
           del.className = "btn-ghost btn-delete";
-      del.innerHTML = "🗑️";
+          del.innerHTML = "🗑️";
 
           del.onclick = () => {
             const a = readEntries();
