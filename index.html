@@ -85,40 +85,40 @@
           grid-template-columns: 1fr 1fr;
         }
       } */
-      /* Responsive table tanpa scroll di mobile */
+      /* Pastikan table tidak overflow pada mobile */
+      #entriesTable {
+        table-layout: fixed; /* Lock column width */
+        width: 100%;
+      }
+
+      /* Pastikan content dalam column wrap dengan cantik */
+      #entriesTable td,
+      #entriesTable th {
+        white-space: normal; /* benarkan wrapping */
+        word-break: break-word; /* pecahkan perkataan panjang */
+        overflow-wrap: break-word;
+        hyphens: auto;
+      }
+
+      /* Column ulasan selalunya paling panjang */
+      #entriesTable td:nth-child(3) {
+        white-space: normal;
+      }
+
+      /* Auto kecilkan tulisan bila screen kecil */
       @media (max-width: 560px) {
-        .table thead {
-          display: none; /* sembunyikan header di mobile */
+        #entriesTable td,
+        #entriesTable th {
+          font-size: clamp(12px, 2.5vw, 14px);
         }
+      }
 
-        .table,
-        .table tbody,
-        .table tr,
-        .table td {
-          display: block;
-          width: 100%;
-        }
-
-        .table tr {
-          margin-bottom: 16px;
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          padding: 12px;
-          background: #0f1a31;
-        }
-
-        .table td {
-          border: none;
-          padding: 6px 0;
-        }
-
-        /* label sebelum setiap TD */
-        .table td::before {
-          content: attr(data-label);
-          display: block;
-          font-size: 0.8rem;
-          color: var(--muted);
-          margin-bottom: 3px;
+      /* Responsive table tanpa scroll di mobile */
+      /* Auto kecilkan tulisan bila screen kecil */
+      @media (max-width: 560px) {
+        #entriesTable td,
+        #entriesTable th {
+          font-size: clamp(12px, 2.5vw, 14px);
         }
       }
 
