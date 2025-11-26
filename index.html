@@ -80,11 +80,48 @@
         grid-template-columns: 1fr;
         gap: 12px;
       }
-      @media (min-width: 560px) {
+      /* @media (min-width: 560px) {
         .row.cols-2 {
           grid-template-columns: 1fr 1fr;
         }
+      } */
+      /* Responsive table tanpa scroll di mobile */
+      @media (max-width: 560px) {
+        .table thead {
+          display: none; /* sembunyikan header di mobile */
+        }
+
+        .table,
+        .table tbody,
+        .table tr,
+        .table td {
+          display: block;
+          width: 100%;
+        }
+
+        .table tr {
+          margin-bottom: 16px;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 12px;
+          background: #0f1a31;
+        }
+
+        .table td {
+          border: none;
+          padding: 6px 0;
+        }
+
+        /* label sebelum setiap TD */
+        .table td::before {
+          content: attr(data-label);
+          display: block;
+          font-size: 0.8rem;
+          color: var(--muted);
+          margin-bottom: 3px;
+        }
       }
+
       label {
         font-size: 0.85rem;
         color: var(--muted);
@@ -330,6 +367,7 @@
       <div class="card" id="section3">
         <h2>Senarai Item</h2>
         <div id="entriesWrap"></div>
+
         <table class="table" id="entriesTable">
           <thead>
             <tr>
@@ -339,9 +377,10 @@
               <th style="width: 10%">Tindakan</th>
             </tr>
           </thead>
+
           <tbody id="entriesBody">
             <tr>
-              <td class="tmuted" colspan="4">Tiada data.</td>
+              <td data-label="Gambar" class="tmuted">Tiada data.</td>
             </tr>
           </tbody>
         </table>
