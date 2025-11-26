@@ -535,7 +535,7 @@
 
       // ===== PDF builder (guna thumbnail; ulang Maklumat Asas di setiap page)
 // =======================================================
-// PDF BUILDER (Versi Lengkap + Footer "x/y" + Watermark)
+// PDF BUILDER (Fixed 3 Items per Page + Footer "x/y")
 // =======================================================
 async function buildPDF() {
   if (!window.jspdf || !window.jspdf.jsPDF)
@@ -551,30 +551,25 @@ async function buildPDF() {
 
   const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
   const items = readEntries();
+  const ITEMS_PER_PAGE = 3;  // <<=== FIXED 3 ITEM / PAGE
 
-  // ====================================
-  // Watermark (tetap pada setiap page)
-  // ====================================
+  // ============================
+  // WATERMARK
+  // ============================
   function drawWatermark() {
     doc.saveGraphicsState();
     doc.setGState(new doc.GState({ opacity: 0.06 }));
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(80);
     doc.setTextColor(150);
-
-    doc.text("JKR / JAN", W / 2, H / 2, {
-      align: "center",
-      angle: -30,
-    });
-
+    doc.text("JKR / JAN", W / 2, H / 2, { align: "center", angle: -30 });
     doc.restoreGraphicsState();
   }
 
-  // ====================================
-  // Header Setiap Halaman
-  // ====================================
-  function drawHeader() {
+  // ============================
+  // HEADER PAGE
+  // ============================
+  function drawHeader(pageNo, totalPages) {
     y = M;
 
     doc.setFont("helvetica", "bold");
@@ -589,7 +584,11 @@ async function buildPDF() {
     });
     y += 16;
 
-    // Maklumat asas
+    // Page number (temporary, final overwritten later)
+    doc.setFontSize(9);
+    doc.text(`Halaman ${pageNo}`, W - M, M, { align: "right" });
+
+    // Info table
     const info = [
       ["Nama Projek:", form.namaProjek || "-"],
       ["Perkara:", form.perkara || "-"],
@@ -606,28 +605,21 @@ async function buildPDF() {
       y += 13;
     });
 
-    y += 6;
+    y += 8;
     doc.setDrawColor(120);
     doc.setLineWidth(0.6);
     doc.line(M, y, W - M, y);
-    y += 16;
+
+    y += 18;
   }
 
-  // ====================================
-  // Item (gambar + ulasan)
-  // ====================================
+  // ============================
+  // ITEM (GAMBAR + ULASAN)
+  // ============================
   async function drawItem(it, idx) {
     const itemHeight = 180;
-    const need = itemHeight + 40;
 
-    // Page break bila ruang tidak cukup
-    if (y + need > H - M) {
-      doc.addPage();
-      drawWatermark();
-      drawHeader();
-    }
-
-    // Tajuk item
+    // Tajuk kecil item
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text(`${idx + 1}. Lokasi: ${it.lokasi || "-"}`, M, y);
@@ -695,6 +687,7 @@ async function buildPDF() {
     doc.text("Ulasan:", rightX + 8, y + 14);
 
     doc.setFont("helvetica", "normal");
+
     const lines = (it.ulasan || "")
       .split(/\n+/)
       .map((t) => "• " + t.replace(/^•\s*/, ""));
@@ -702,22 +695,31 @@ async function buildPDF() {
     const wrapped = doc.splitTextToSize(lines.join("\n"), rightW - 20);
     doc.text(wrapped, rightX + 8, y + 28);
 
-    y += itemHeight + 20;
+    y += itemHeight + 22;
   }
 
-  // ====================================
-  // Generate PDF
-  // ====================================
+  // ============================
+  // BUILD PDF (3 ITEM / PAGE)
+  // ============================
+  let pageNo = 1;
   drawWatermark();
-  drawHeader();
+  drawHeader(pageNo);
 
   for (let i = 0; i < items.length; i++) {
     await drawItem(items[i], i);
+
+    // Bila cukup 3 item → page baru
+    if ((i + 1) % ITEMS_PER_PAGE === 0 && i < items.length - 1) {
+      doc.addPage();
+      pageNo++;
+      drawWatermark();
+      drawHeader(pageNo);
+    }
   }
 
-  // ====================================
+  // ============================
   // FOOTER "x/y"
-  // ====================================
+  // ============================
   function addFooter(pageNumber, total) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -732,6 +734,7 @@ async function buildPDF() {
 
   return doc;
 }
+
 
       // ===== Simpan PDF (paksa muat turun tempatan)
       async function savePDFLocal() {
