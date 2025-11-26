@@ -224,10 +224,10 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>📋 Laporan Lawatan Tapak</h1>
+      <h1>📋 Laporan Bergambar</h1>
       <div class="subtitle">
-        Borang mudah alih untuk laporan lawatan tapak. Data akan disimpan secara
-        tempatan.
+        <!-- Borang mudah alih untuk laporan lawatan tapak. Data akan disimpan secara
+        tempatan. -->
       </div>
 
       <!-- SECTION 1 -->
@@ -236,19 +236,11 @@
         <div class="row cols-2">
           <div>
             <label>Nama Projek *</label>
-            <input
-              id="namaProjek"
-              placeholder="cth: Naik Taraf IP PBX Bangunan A"
-              required
-            />
+            <input id="namaProjek" placeholder="" required />
           </div>
           <div>
             <label>Perkara *</label>
-            <input
-              id="perkara"
-              placeholder="cth: Khidmat Nasihat Cadangan Penggantian PABX ..."
-              required
-            />
+            <input id="perkara" placeholder="" required />
           </div>
           <div>
             <label>Tarikh *</label>
@@ -256,19 +248,11 @@
           </div>
           <div>
             <label>Nama Bangunan</label>
-            <input
-              id="namaBangunan"
-              placeholder="cth: Blok Utara, TC4 Tingkat 8"
-            />
+            <input id="namaBangunan" placeholder="" />
           </div>
           <div>
-            <label>Email *</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="cth: nama@agensi.gov.my"
-              required
-            />
+            <label>Nama Pelapor *</label>
+            <input id="email" type="email" placeholder="" required />
           </div>
         </div>
         <p class="note">Medan bertanda * adalah wajib diisi.</p>
@@ -281,7 +265,7 @@
           <div>
             <label>Nama bilik / lokasi</label>
             <div class="input-wrap">
-              <input id="lokasi" placeholder="cth: Bilik TCR 1" />
+              <input id="lokasi" placeholder="" />
               <button
                 type="button"
                 class="clear-btn"
@@ -324,7 +308,7 @@
             <div class="input-wrap">
               <textarea
                 id="ulasan"
-                placeholder="• Kabel network UTP 6A...&#10;• Tray fiber rapi..."
+                placeholder="• Ulasan 1&#10;• Ulasan 2&#10;• Ulasan 3"
               ></textarea>
               <button
                 type="button"
@@ -807,82 +791,315 @@
 
       // ===== Cetak HTML fallback (ulang header setiap halaman; item: kiri gambar, kanan ulasan)
       function openPrintView() {
+        // --- Konstanta asas ---
+        const ITEMS_PER_PAGE = 3;
+
+        // Ambil data borang & item daripada localStorage / storan dalaman
         const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const items = readEntries();
+        const items = readEntries() || [];
+        const generatedAt = new Date().toLocaleString();
+
+        // Buka tab/tingkap baru untuk paparan cetak
         const win = window.open("", "_blank");
+
+        // Fungsi untuk 'escape' teks supaya selamat dalam HTML
         const esc = (s) =>
           String(s || "").replace(
             /[&<>]/g,
             (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])
           );
-        const headerBlock = `
-          <h1>LAPORAN LAWATAN TAPAK</h1>
-          <div class="sub">Dijana: ${new Date().toLocaleString()}</div>
-          <table style="width:100%; margin-bottom:20px">
-            <tr><td><strong>Nama Projek:</strong></td><td>${esc(
-              form.namaProjek
-            )}</td></tr>
-            <tr><td><strong>Perkara:</strong></td><td>${esc(
-              form.perkara
-            )}</td></tr>
-            <tr><td><strong>Tarikh:</strong></td><td>${esc(
-              form.tarikh
-            )}</td></tr>
-            <tr><td><strong>Nama Bangunan:</strong></td><td>${esc(
-              form.namaBangunan
-            )}</td></tr>
-            <tr><td><strong>Email:</strong></td><td>${esc(form.email)}</td></tr>
+
+        // Kira jumlah halaman berdasarkan 3 item per page
+        const totalPages = Math.max(
+          1,
+          Math.ceil(items.length / ITEMS_PER_PAGE)
+        );
+
+        // Header bagi setiap halaman (termasuk nombor halaman)
+        const renderHeader = (pageNo) => `
+    <div class="report-header">
+      <div class="header-left">
+        <div class="logo-box">
+          ${form.logoUrl ? `<img src="${form.logoUrl}" alt="Logo agensi">` : ""}
+        </div>
+      </div>
+      <div class="header-right">
+        <h1>LAPORAN BERGAMBAR</h1>
+        <div class="sub">Dijana: ${esc(generatedAt)}</div>
+        <div class="page-no">Halaman ${pageNo} / ${totalPages}</div>
+      </div>
+    </div>
+
+    <table class="meta-table">
+      <tr>
+        <td><strong>Nama Projek</strong></td>
+        <td>${esc(form.namaProjek)}</td>
+      </tr>
+      <tr>
+        <td><strong>Perkara</strong></td>
+        <td>${esc(form.perkara)}</td>
+      </tr>
+      <tr>
+        <td><strong>Tarikh</strong></td>
+        <td>${esc(form.tarikh)}</td>
+      </tr>
+      <tr>
+        <td><strong>Nama Bangunan</strong></td>
+        <td>${esc(form.namaBangunan)}</td>
+      </tr>
+      <tr>
+        <td><strong>Nama Pelapor</strong></td>
+        <td>${esc(form.email)}</td>
+      </tr>
+    </table>
+    <hr>
+  `;
+
+        // Table item (gambar + ulasan) untuk satu halaman
+        const renderItemsTable = (pageItems, startIndex) =>
+          pageItems
+            .map((it, idx) => {
+              const globalIndex = startIndex + idx + 1;
+              const ulasanHtml = esc(it.ulasan || "")
+                .split(/\n+/)
+                .filter(Boolean)
+                .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
+                .join("");
+
+              return `
+          <table class="item-table">
+            <tr>
+              <th style="width:50%">
+                No: ${globalIndex}
+                &nbsp;&nbsp; Lokasi: ${esc(it.lokasi || "-")}
+              </th>
+              <th>Ulasan</th>
+            </tr>
+            <tr>
+              <td class="gallery">
+                ${
+                  it.img
+                    ? `<img src="${it.img}" alt="Gambar ${globalIndex}">`
+                    : "(Tiada gambar)"
+                }
+              </td>
+              <td>
+                ${
+                  ulasanHtml
+                    ? `<ul>${ulasanHtml}</ul>`
+                    : "<em>(Tiada ulasan)</em>"
+                }
+              </td>
+            </tr>
           </table>
-          <hr>
         `;
-        let html = `<!doctype html><html><head><meta charset="utf-8"><title>Laporan (Cetak)</title>
-        <style>
-          body{font-family:Inter,Arial,sans-serif;margin:14mm}
-          h1{font-size:16pt;margin:0 0 4pt;text-align:center}
-          .sub{font-size:9pt;text-align:center;margin:0 0 8pt}
-          table{border-collapse:collapse;width:100%;font-size:10pt}
-          th,td{border:1px solid #aaa;padding:6pt;vertical-align:top}
-          .page-break{page-break-before:always}
-          .gallery img{max-width:100%;max-height:120pt;object-fit:contain}
-          @page{size:A4;margin:14mm}
-        </style></head><body>${headerBlock}`;
+            })
+            .join("");
+
+        // ======================
+        // Bina HTML penuh
+        // ======================
+        let html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Laporan (Cetak)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm;
+    }
+
+    body {
+      font-family: Inter, Arial, sans-serif;
+      margin: 14mm;
+      font-size: 10pt;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 16pt;
+      margin: 0 0 4pt;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.5pt;
+    }
+
+    .sub {
+      font-size: 9pt;
+      margin: 0 0 4pt;
+    }
+
+    .page-no {
+      font-size: 9pt;
+      font-weight: bold;
+      margin-top: 4pt;
+    }
+
+    .report-header {
+      display: flex;
+      align-items: center;
+      gap: 12pt;
+      margin-bottom: 8pt;
+    }
+
+    .header-left {
+      width: 80pt;
+    }
+
+    .logo-box {
+      width: 80pt;
+      height: 80pt;
+      border: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .logo-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .header-right {
+      flex: 1;
+    }
+
+    .meta-table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 10pt;
+      font-size: 9.5pt;
+    }
+
+    .meta-table td {
+      border: 1px solid #aaa;
+      padding: 4pt 6pt;
+      vertical-align: top;
+    }
+
+    .meta-table td:first-child {
+      width: 28%;
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+
+    .item-table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 8pt;
+      margin-bottom: 6pt;
+      font-size: 10pt;
+      page-break-inside: avoid;
+    }
+
+    .item-table th,
+    .item-table td {
+      border: 1px solid #aaa;
+      padding: 6pt;
+      vertical-align: top;
+    }
+
+    .item-table th {
+      background: #f0f0f0;
+      text-align: left;
+    }
+
+    .gallery {
+      text-align: center;
+      height: 130pt;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gallery img {
+      max-width: 100%;
+      max-height: 120pt;
+      object-fit: contain;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    /* Watermark teks */
+    .watermark-text {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 60pt;
+      color: rgba(0, 0, 0, 0.03);
+      z-index: -1;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* Optional watermark logo (kalau nak letak imej) */
+    .watermark-logo {
+      position: fixed;
+      bottom: 20mm;
+      right: 20mm;
+      opacity: 0.06;
+      max-width: 60mm;
+      max-height: 60mm;
+      z-index: -1;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="watermark-text">JKR / JAN</div>
+  ${
+    form.logoWatermarkUrl
+      ? `<img class="watermark-logo" src="${form.logoWatermarkUrl}" alt="Watermark logo">`
+      : ""
+  }
+`;
+
+        // Jika tiada item, tetap tunjuk satu halaman dengan mesej ringkas
         if (items.length === 0) {
-          html += "<p>(Tiada item)</p>";
+          html += renderHeader(1);
+          html += "<p>(Tiada item dilaporkan)</p>";
         } else {
-          items.forEach((it, idx) => {
-            if (idx > 0) html += '<div class="page-break"></div>' + headerBlock;
-            html += `
-              <table style="margin-top:8pt">
-                <tr><th style="width:50%">No: ${
-                  idx + 1
-                } &nbsp;&nbsp; Lokasi: ${esc(
-              it.lokasi || "-"
-            )}</th><th>Ulasan</th></tr>
-                <tr>
-                  <td class="gallery">${
-                    it.img ? `<img src="${it.img}">` : "(tiada gambar)"
-                  }</td>
-                  <td><ul>${esc(it.ulasan || "")
-                    .split(/\n+/)
-                    .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
-                    .join("")}</ul></td>
-                </tr>
-              </table>`;
-          });
+          // Ulang setiap halaman (3 item per page)
+          for (let page = 0; page < totalPages; page++) {
+            const start = page * ITEMS_PER_PAGE;
+            const pageItems = items.slice(start, start + ITEMS_PER_PAGE);
+
+            if (page > 0) {
+              html += '<div class="page-break"></div>';
+            }
+
+            html += renderHeader(page + 1);
+            html += renderItemsTable(pageItems, start);
+          }
         }
-        html += "</body></html>";
+
+        html += `
+</body>
+</html>`;
+
+        // Tulis HTML ke dalam window baru & sediakan untuk print
         win.document.open();
         win.document.write(html);
         win.document.close();
+
+        // Pastikan semua gambar siap load sebelum print
         const t = setInterval(() => {
           const imgs = win.document.images;
           let ok = true;
+
           for (const im of imgs) {
             if (!im.complete) {
               ok = false;
               break;
             }
           }
+
           if (ok) {
             clearInterval(t);
             win.focus();
