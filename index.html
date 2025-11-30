@@ -59,7 +59,7 @@
         margin: 0 0 8px;
       }
       h2 {
-        font-size: 1.35rem;
+        font-size: 1rem;
         margin: 0 0 8px;
       }
       .subtitle {
@@ -88,13 +88,14 @@
       /* Pastikan table tidak overflow pada mobile */
       #entriesTable {
         table-layout: fixed; /* Lock column width */
+        border-collapse: collapse; /* pastikan border cantik */
         width: 100%;
       }
 
       /* Pastikan content dalam column wrap dengan cantik */
-      #entriesTable td,
-      #entriesTable th {
-        white-space: normal; /* benarkan wrapping */
+      #entriesTable th,
+      #entriesTable td {
+        white-space: pre-wrap; /* CHANGED: pre-wrap preserves newlines safely */
         word-break: break-word; /* pecahkan perkataan panjang */
         overflow-wrap: break-word;
         hyphens: auto;
@@ -102,31 +103,43 @@
 
       /* Column ulasan selalunya paling panjang */
       #entriesTable td:nth-child(3) {
-        white-space: normal;
+        white-space: pre-wrap; /* CHANGED: Consistent with above */
+        word-break: break-word; /* pecahkan perkataan panjang */
+        overflow-wrap: break-word;
+        hyphens: auto;
+        width: 45%;
+      }
+
+      /* Center align column tindakan */
+      #entriesTable td:nth-child(4) {
+        text-align: center;
+        vertical-align: middle;
+        width: 10%;
       }
 
       /* Auto kecilkan tulisan bila screen kecil */
       @media (max-width: 560px) {
+        .table thead {
+          display: none;
+        }
         #entriesTable td,
-        #entriesTable th {
+        #entriesTable td {
           font-size: clamp(12px, 2.5vw, 14px);
         }
       }
 
-      /* Responsive table tanpa scroll di mobile */
-      /* Auto kecilkan tulisan bila screen kecil */
-      @media (max-width: 560px) {
-        #entriesTable td,
-        #entriesTable th {
-          font-size: clamp(12px, 2.5vw, 14px);
-        }
-      }
       .btn-delete {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 0px; /* boleh adjust ikut citarasa */
+        height: 0px;
+
         background: transparent;
         border: none;
-        font-size: 1.3rem;
+        font-size: 1.4rem;
         cursor: pointer;
-        align-items: center;
+        margin: 0 auto; /* centre dalam cell */
       }
 
       .btn-delete:hover {
@@ -146,7 +159,7 @@
       }
       .input-wrap button.clear-btn {
         position: absolute;
-        right: 8px;
+        right: 1px;
         top: 50%;
         transform: translateY(-50%);
         background: transparent;
@@ -154,6 +167,7 @@
         color: var(--muted);
         font-size: 1rem;
         cursor: pointer;
+        width: 50px;
       }
       input,
       textarea,
@@ -176,8 +190,9 @@
       }
       .btnbar {
         display: flex;
-        gap: 8px;
+        gap: 20px;
         flex-wrap: wrap;
+        justify-content: center;
       }
       button {
         appearance: none;
@@ -186,28 +201,30 @@
         color: var(--text);
         padding: 10px 14px;
         border-radius: 12px;
-        font-weight: 600;
+        font-weight: 100;
         cursor: pointer;
+        width: 130px;
+        height: 40px;
       }
       button.primary {
         background: var(--accent);
         border-color: transparent;
-        color: #051b11;
+        color: #eaebeb;
       }
       button.ok {
         background: var(--ok);
         border-color: transparent;
-        color: #051b11;
+        color: #eaebeb;
       }
       button.warn {
         background: var(--warn);
         border-color: transparent;
-        color: #111;
+        color: #eaebeb;
       }
       button.danger {
         background: var(--danger);
         border-color: transparent;
-        color: #051b11;
+        color: #eaebeb;
       }
       .thumb {
         display: block;
@@ -225,7 +242,7 @@
       }
       .table th,
       .table td {
-        border: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
         padding: 10px;
         vertical-align: top;
       }
@@ -378,7 +395,7 @@
       </div>
       <!-- SECTION 3 (list) -->
       <div class="card" id="section3">
-        <h2>Senarai Item</h2>
+        <h2>Senarai Rekod</h2>
         <div id="entriesWrap"></div>
 
         <table class="table" id="entriesTable">
@@ -386,8 +403,8 @@
             <tr>
               <th style="width: 25%">Gambar</th>
               <th style="width: 20%">Lokasi</th>
-              <th style="width: 20%">Ulasan</th>
-              <th style="width: 35%">Tindakan</th>
+              <th style="width: 35%">Ulasan</th>
+              <th style="width: 10%"></th>
             </tr>
           </thead>
 
@@ -464,29 +481,30 @@
       const fileToThumbDataURL = (file) =>
         new Promise((resolve, reject) => {
           const img = new Image();
-          const fr = new FileReader();
-          fr.onload = () => {
-            img.onload = () => {
-              const ratio = (img.naturalHeight || 1) / (img.naturalWidth || 1);
-              const w = Math.min(THUMB_W, img.naturalWidth || THUMB_W);
-              const h = Math.round(w * ratio);
-              const cv = document.createElement("canvas");
-              cv.width = w;
-              cv.height = h;
-              const ctx = cv.getContext("2d", { willReadFrequently: false });
-              ctx.drawImage(img, 0, 0, w, h);
-              try {
-                const url = cv.toDataURL("image/jpeg", THUMB_Q);
-                resolve(url);
-              } catch (e) {
-                reject(e);
-              }
-            };
-            img.onerror = reject;
-            img.src = fr.result;
+          // CHANGED: Use createObjectURL for better memory handling
+          const url = URL.createObjectURL(file);
+          img.onload = () => {
+            URL.revokeObjectURL(url); // Clean up memory
+            const ratio = (img.naturalHeight || 1) / (img.naturalWidth || 1);
+            const w = Math.min(THUMB_W, img.naturalWidth || THUMB_W);
+            const h = Math.round(w * ratio);
+            const cv = document.createElement("canvas");
+            cv.width = w;
+            cv.height = h;
+            const ctx = cv.getContext("2d", { willReadFrequently: false });
+            ctx.drawImage(img, 0, 0, w, h);
+            try {
+              const thumbUrl = cv.toDataURL("image/jpeg", THUMB_Q);
+              resolve(thumbUrl);
+            } catch (e) {
+              reject(e);
+            }
           };
-          fr.onerror = reject;
-          fr.readAsDataURL(file);
+          img.onerror = (e) => {
+            URL.revokeObjectURL(url);
+            reject(e);
+          };
+          img.src = url;
         });
 
       const state = { imgData: "" }; // thumb sahaja
@@ -539,8 +557,12 @@
             : '<span class="tmuted">(tiada)</span>';
           const tLok = document.createElement("td");
           tLok.textContent = it.lokasi || "";
+
           const tUlas = document.createElement("td");
-          tUlas.innerHTML = (it.ulasan || "").replace(/\n/g, "<br>");
+          // CHANGED: Use textContent for security (XSS prevention)
+          // CSS white-space: pre-wrap handles the newlines
+          tUlas.textContent = it.ulasan || "";
+
           const tAct = document.createElement("td");
           const del = document.createElement("button");
           del.className = "btn-ghost btn-delete";
@@ -615,7 +637,10 @@
           doc.setFont("helvetica", "bold");
           doc.setFontSize(80);
           doc.setTextColor(150);
-          doc.text("PERCUBAAN", W / 2, H / 2, { align: "center", angle: -30 });
+          doc.text("SYARIKAT XXX", W / 2, H / 2, {
+            align: "center",
+            angle: -30,
+          });
           doc.restoreGraphicsState();
         }
 
@@ -636,10 +661,6 @@
             align: "center",
           });
           y += 16;
-
-          // Page number (temporary, final overwritten later)
-          // doc.setFontSize(9);
-          // doc.text(`Halaman ${pageNo}`, W - M, M, { align: "right" });
 
           // Info table
           const info = [
@@ -1232,11 +1253,12 @@
               "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
             );
         }
+        // CHANGED: Unlock now actually restores scaling
         function unlock() {
           if (vp)
             vp.setAttribute(
               "content",
-              "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+              "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"
             );
         }
         document.addEventListener("focusin", (e) => {
