@@ -183,12 +183,32 @@
       }
       input[type="date"] {
         padding: 10px 12px;
-        text-align: left; /* untuk adjust di iphone */
-        -webkit-appearance: none; /* buang gaya default safari */
+        position: relative;
       }
+
       input[type="date"]::-webkit-calendar-picker-indicator {
-        filter: invert(1);
+        opacity: 0;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
       }
+
+      .date-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+      }
+
+      .date-wrapper::after {
+        content: "📅";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+
       textarea {
         min-height: 88px;
         resize: vertical;
@@ -319,7 +339,9 @@
           </div>
           <div>
             <label>Tarikh *</label>
-            <input id="tarikh" type="date" required />
+            <div class="date-wrapper">
+              <input id="tarikh" type="date" required />
+            </div>
           </div>
           <div>
             <label>Nama Bangunan</label>
