@@ -181,7 +181,11 @@
         font-size: 16px;
         line-height: 1.4;
       }
-
+      input[type="date"] {
+        padding: 10px 12px;
+        text-align: left; /* untuk adjust di iphone */
+        -webkit-appearance: none; /* buang gaya default safari */
+      }
       input[type="date"]::-webkit-calendar-picker-indicator {
         filter: invert(1);
       }
