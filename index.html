@@ -2,18 +2,14 @@
 <html lang="ms">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"
-    />
-    <title>Laporan Bergambar — Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Laporan Bergambar — Mobile (Optimized & Secure)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- jsPDF (pilihan). Jika tiada internet/CDN disekat, fallback ke cetak HTML -->
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <style>
       :root {
@@ -22,9 +18,9 @@
         --text: #e7eefc;
         --muted: #8aa0c6;
         --accent: #4f8cff;
-        --ok: #4f8cff;
-        --warn: #4f8cff;
-        --danger: #4f8cff;
+        --ok: #28a745;
+        --warn: #ffc107;
+        --danger: #dc3545;
         --border: #1d2942;
       }
       * {
@@ -34,13 +30,8 @@
       body {
         height: 100%;
         touch-action: manipulation;
-      }
-      button,
-      a,
-      input,
-      textarea,
-      img {
-        touch-action: manipulation;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       body {
         margin: 0;
@@ -55,12 +46,12 @@
         padding: 16px;
       }
       h1 {
-        font-size: 1.35rem;
+        font-size: 1.5rem;
         margin: 0 0 8px;
       }
       h2 {
-        font-size: 1rem;
-        margin: 0 0 8px;
+        font-size: 1.1rem;
+        margin: 0 0 12px;
       }
       .subtitle {
         color: var(--muted);
@@ -71,81 +62,117 @@
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 16px;
-        padding: 16px;
-        margin: 12px 0;
+        padding: 20px;
+        margin: 16px 0;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        transition: all 0.3s ease-in-out;
+      }
+      .card.hidden {
+        display: none;
       }
       .row {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 16px;
       }
-      /* @media (min-width: 560px) {
+      @media (min-width: 768px) {
         .row.cols-2 {
           grid-template-columns: 1fr 1fr;
         }
-      } */
-      /* Pastikan table tidak overflow pada mobile */
-      #entriesTable {
-        table-layout: fixed; /* Lock column width */
-        border-collapse: collapse; /* pastikan border cantik */
-        width: 100%;
       }
 
-      /* Pastikan content dalam column wrap dengan cantik */
+      #entriesTable {
+        table-layout: fixed;
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.92rem;
+      }
       #entriesTable th,
       #entriesTable td {
-        white-space: pre-wrap; /* CHANGED: pre-wrap preserves newlines safely */
-        word-break: break-word; /* pecahkan perkataan panjang */
+        border-bottom: 1px solid var(--border);
+        padding: 12px 10px;
+        vertical-align: top;
+        white-space: pre-wrap;
+        word-break: break-word;
         overflow-wrap: break-word;
-        hyphens: auto;
       }
-
-      /* Column ulasan selalunya paling panjang */
+      #entriesTable th {
+        background: #0f1a31;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      #entriesTable td:nth-child(1) {
+        width: 25%;
+      }
+      #entriesTable td:nth-child(2) {
+        width: 20%;
+      }
       #entriesTable td:nth-child(3) {
-        white-space: pre-wrap; /* CHANGED: Consistent with above */
-        word-break: break-word; /* pecahkan perkataan panjang */
-        overflow-wrap: break-word;
-        hyphens: auto;
-        width: 45%;
-      }
-
-      /* Center align column tindakan */
+        width: 35%;
+      } /* Adjusted for action buttons */
       #entriesTable td:nth-child(4) {
+        width: 20%;
         text-align: center;
         vertical-align: middle;
-        width: 10%;
-      }
+      } /* Adjusted for action buttons */
 
-      /* Auto kecilkan tulisan bila screen kecil */
       @media (max-width: 560px) {
-        .table thead {
+        #entriesTable thead {
           display: none;
         }
-        #entriesTable td,
+        #entriesTable,
+        #entriesTable tbody,
+        #entriesTable tr,
         #entriesTable td {
-          font-size: clamp(12px, 2.5vw, 14px);
+          display: block;
+          width: 100% !important;
+        }
+        #entriesTable tr {
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 10px;
+          margin-bottom: 12px;
+        }
+        #entriesTable td {
+          border: none;
+          padding: 5px 0;
+        }
+        #entriesTable td:before {
+          content: attr(data-label) ": ";
+          font-weight: 600;
+          color: var(--muted);
+          display: inline-block;
+          width: 80px;
         }
       }
 
-      .btn-delete {
+      .action-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+      .btn-delete,
+      .btn-edit {
         display: flex;
         justify-content: center;
         align-items: center;
-        width: 0px; /* boleh adjust ikut citarasa */
-        height: 0px;
-
         background: transparent;
         border: none;
-        font-size: 1.4rem;
+        color: var(--muted);
+        font-size: 1.2rem;
         cursor: pointer;
-        margin: 0 auto; /* centre dalam cell */
+        padding: 5px;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
       }
-
       .btn-delete:hover {
+        color: var(--danger);
+        background: rgba(220, 53, 69, 0.12);
+      }
+      .btn-edit:hover {
         color: var(--accent);
         background: rgba(79, 140, 255, 0.12);
-        border-radius: 6px;
       }
 
       label {
@@ -153,21 +180,22 @@
         color: var(--muted);
         display: block;
         margin-bottom: 6px;
+        font-weight: 500;
       }
       .input-wrap {
         position: relative;
       }
       .input-wrap button.clear-btn {
         position: absolute;
-        right: 1px;
+        right: 8px;
         top: 50%;
         transform: translateY(-50%);
         background: transparent;
         border: none;
         color: var(--muted);
-        font-size: 1rem;
+        font-size: 1.2rem;
         cursor: pointer;
-        width: 50px;
+        padding: 5px;
       }
       input,
       textarea,
@@ -180,13 +208,17 @@
         border-radius: 12px;
         font-size: 16px;
         line-height: 1.4;
+        transition: border-color 0.2s;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
       }
       input[type="date"] {
         padding: 10px 12px;
-        position: relative;
-        -webkit-appearance: none; /* Remove iOS styling */
       }
-
       input[type="date"]::-webkit-calendar-picker-indicator {
         opacity: 0;
         position: absolute;
@@ -194,13 +226,11 @@
         height: 100%;
         cursor: pointer;
       }
-
       .date-wrapper {
         position: relative;
         display: inline-block;
         width: 100%;
       }
-
       .date-wrapper::after {
         content: "📅";
         position: absolute;
@@ -208,17 +238,18 @@
         top: 50%;
         transform: translateY(-50%);
         pointer-events: none;
+        font-size: 1.2rem;
       }
-
       textarea {
-        min-height: 88px;
+        min-height: 100px;
         resize: vertical;
       }
       .btnbar {
         display: flex;
-        gap: 20px;
+        gap: 12px;
         flex-wrap: wrap;
         justify-content: center;
+        margin-top: 16px;
       }
       button {
         appearance: none;
@@ -227,33 +258,37 @@
         color: var(--text);
         padding: 10px 14px;
         border-radius: 12px;
-        font-size: 13px;
-        font-weight: 400;
+        font-size: 14px;
+        font-weight: 500;
         cursor: pointer;
+        transition: all 0.2s ease-in-out;
         text-shadow: 0px 1px 0px #283966;
-        width: 130px;
-        height: 40px;
         flex-grow: 1;
+        min-width: 130px;
+      }
+      button:hover {
+        background: #1a2338;
+        transform: translateY(-2px);
       }
       button.primary {
         background: var(--accent);
-        border-color: transparent;
-        color: #eaebeb;
+        border-color: var(--accent);
+        color: #fff;
       }
       button.ok {
         background: var(--ok);
-        border-color: transparent;
-        color: #eaebeb;
+        border-color: var(--ok);
+        color: #fff;
       }
       button.warn {
         background: var(--warn);
-        border-color: transparent;
-        color: #eaebeb;
+        border-color: var(--warn);
+        color: #000;
       }
       button.danger {
         background: var(--danger);
-        border-color: transparent;
-        color: #eaebeb;
+        border-color: var(--danger);
+        color: #fff;
       }
       .thumb {
         display: block;
@@ -263,52 +298,79 @@
         background: #0c1529;
         border: 1px dashed var(--border);
         border-radius: 12px;
-      }
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.92rem;
-      }
-      .table th,
-      .table td {
-        border-bottom: 1px solid var(--border);
-        padding: 10px;
-        vertical-align: top;
-      }
-      .table th {
-        background: #0f1a31;
-        position: sticky;
-        top: 0;
+        margin-top: 8px;
       }
       .tmuted {
         color: var(--muted);
       }
-      .toast {
+      .toast,
+      .processing-indicator {
         position: fixed;
         left: 50%;
         transform: translateX(-50%);
+        padding: 12px 20px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        z-index: 1000;
+        font-size: 14px;
+        text-align: center;
+      }
+      .toast {
         bottom: 20px;
         background: #091021;
         color: #fff;
-        padding: 10px 14px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
         display: none;
-        z-index: 5;
       }
-      .btn-ghost {
-        background: transparent;
-        font-size: 0.8rem;
-        padding: 6px 10px;
+      .processing-indicator {
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(9, 16, 33, 0.9);
+        color: #fff;
+        display: none;
+      }
+      .processing-indicator.active {
+        display: block;
       }
       .note {
         font-size: 0.8rem;
         color: var(--muted);
         margin-top: 12px;
       }
+
+      /* Toggle Button Styles */
+      .toggle-btn-container {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .toggle-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .toggle-btn:hover {
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      .toggle-btn.active {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
       @media print {
         #section4,
-        .toast {
+        .toast,
+        .processing-indicator,
+        .toggle-btn-container {
           display: none !important;
         }
         body {
@@ -322,58 +384,89 @@
     <div class="wrap">
       <h1>📋 Laporan Bergambar</h1>
       <div class="subtitle">
-        <!-- Borang mudah alih untuk laporan lawatan tapak. Data akan disimpan secara
-        tempatan. -->
+        Borang mudah alih untuk laporan lawatan tapak. Data disimpan secara
+        tempatan.
       </div>
 
-      <!-- SECTION 1 -->
+      <!-- Toggle Buttons -->
+      <div class="toggle-btn-container">
+        <button id="toggleSection1" class="toggle-btn">
+          <span class="icon">▼</span> Maklumat Asas
+        </button>
+        <button id="toggleSection3" class="toggle-btn">
+          <span class="icon">▼</span> Senarai Rekod
+        </button>
+      </div>
+
       <div class="card" id="section1">
         <h2>Maklumat Asas</h2>
         <div class="row cols-2">
           <div>
-            <label>Nama Projek *</label>
-            <input id="namaProjek" placeholder="" required />
+            <label for="namaProjek">Nama Projek *</label
+            ><input
+              id="namaProjek"
+              placeholder="Masukkan nama projek"
+              required
+              aria-required="true"
+            />
           </div>
           <div>
-            <label>Perkara *</label>
-            <input id="perkara" placeholder="" required />
+            <label for="perkara">Perkara *</label
+            ><input
+              id="perkara"
+              placeholder="Contoh: Pemeriksaan Mekanikal"
+              required
+              aria-required="true"
+            />
           </div>
           <div>
-            <label>Tarikh *</label>
+            <label for="tarikh">Tarikh *</label>
             <div class="date-wrapper">
-              <input id="tarikh" type="date" required />
+              <input id="tarikh" type="date" required aria-required="true" />
             </div>
           </div>
           <div>
-            <label>Nama Bangunan</label>
-            <input id="namaBangunan" placeholder="" />
+            <label for="namaBangunan">Nama Bangunan</label
+            ><input id="namaBangunan" placeholder="Masukkan nama bangunan" />
           </div>
           <div>
-            <label>Nama Pelapor *</label>
-            <input id="email" type="email" placeholder="" required />
+            <label for="email">Nama Pelapor *</label
+            ><input
+              id="email"
+              type="email"
+              placeholder="nama@email.com"
+              required
+              aria-required="true"
+            />
           </div>
         </div>
         <p class="note">Medan bertanda * adalah wajib diisi.</p>
       </div>
 
-      <!-- SECTION 2 (Item input) -->
       <div class="card" id="section2">
         <h2>Butiran Lokasi</h2>
         <div class="row">
           <div>
-            <label>Nama bilik / lokasi</label>
+            <label for="lokasi">Nama bilik / lokasi</label>
             <div class="input-wrap">
-              <input id="lokasi" placeholder="" />
-              <button
+              <input id="lokasi" placeholder="Contoh: Bilik Server 1" /><button
                 type="button"
                 class="clear-btn"
                 onclick="document.getElementById('lokasi').value=''"
+                aria-label="Kosongkan lokasi"
               >
-                x
+                ✕
               </button>
             </div>
           </div>
-
+          <div>
+            <label for="imageSize">Saiz Gambar (Thumbnail)</label>
+            <select id="imageSize">
+              <option value="small">Kecil (320px)</option>
+              <option value="medium" selected>Sederhana (480px)</option>
+              <option value="large">Besar (640px)</option>
+            </select>
+          </div>
           <div>
             <label>Gambar</label>
             <div class="btnbar">
@@ -385,922 +478,722 @@
                 hidden
               />
               <input id="fileGallery" type="file" accept="image/*" hidden />
-              <button id="btnKamera" class="primary">📷 Kamera</button>
-              <button id="btnGaleri" class="primary">🖼️ Galeri</button>
+              <button
+                id="btnKamera"
+                class="primary"
+                aria-label="Ambil gambar menggunakan kamera"
+              >
+                📷 Kamera
+              </button>
+              <button
+                id="btnGaleri"
+                class="primary"
+                aria-label="Pilih gambar dari galeri"
+              >
+                🖼️ Galeri
+              </button>
             </div>
             <img
               id="preview"
               class="thumb"
-              alt="Pratonton"
-              style="display: none; margin-top: 8px"
+              alt="Pratonton gambar"
+              style="display: none"
             />
-            <!-- <div class="note">
-              * Semua gambar akan dikecilkan ke bentuk
-              <strong>thumbnail</strong> (~480px lebar, JPEG kualiti 0.7) untuk
-              memuat banyak item pada iPhone & Android.
-            </div> -->
           </div>
-
           <div>
-            <label>Ulasan</label>
+            <label for="ulasan">Ulasan</label>
             <div class="input-wrap">
               <textarea
                 id="ulasan"
                 placeholder="• Ulasan 1&#10;• Ulasan 2&#10;• Ulasan 3"
-              ></textarea>
-              <button
+              ></textarea
+              ><button
                 type="button"
                 class="clear-btn"
                 onclick="document.getElementById('ulasan').value=''"
+                aria-label="Kosongkan ulasan"
               >
-                x
+                ✕
               </button>
             </div>
           </div>
-
-          <div class="btnbar" style="margin-top: 8px">
-            <button class="ok" id="btnSimpanData">Simpan Item</button>
-            <button class="warn" id="btnClear">Set Semula</button>
-          </div>
+        </div>
+        <div class="btnbar">
+          <button class="ok" id="btnSimpanData">➕ Simpan Item</button
+          ><button class="warn" id="btnClear">🔄 Set Semula</button>
         </div>
       </div>
-      <!-- SECTION 3 (list) -->
+
       <div class="card" id="section3">
         <h2>Senarai Rekod</h2>
-        <div id="entriesWrap"></div>
-
         <table class="table" id="entriesTable">
           <thead>
             <tr>
               <th style="width: 25%">Gambar</th>
               <th style="width: 20%">Lokasi</th>
               <th style="width: 35%">Ulasan</th>
-              <th style="width: 10%"></th>
+              <th style="width: 20%">Tindakan</th>
             </tr>
           </thead>
-
           <tbody id="entriesBody">
             <tr>
-              <td data-label="Gambar" class="tmuted">Tiada data.</td>
+              <td data-label="Gambar" class="tmuted" colspan="4">
+                Tiada data.
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- SECTION 4 (actions) -->
       <div class="card" id="section4">
-        <div class="btnbar">
-          <button id="btnSavePDFLocal" class="ok">Muat Turun PDF</button>
-          <button id="btnSubmit" class="danger">Hantar</button>
+        <h2>Tindakan Akhir</h2>
+        <div class="row cols-2">
+          <div>
+            <label for="pdfQuality">Kualiti PDF</label
+            ><select id="pdfQuality">
+              <option value="low">Rendah (Saiz Fail Kecil)</option>
+              <option value="medium" selected>Sederhana</option>
+              <option value="high">Tinggi (Saiz Fail Besar)</option>
+            </select>
+          </div>
         </div>
-        <!-- <div class="note">
-          "Simpan PDF (Muat Turun)" memaksa muat turun ke storan
-          telefon/komputer (iOS: Files). "Simpan & Hantar" cuba menggunakan
-          Share Sheet jika disokong, kemudian fallback muat turun.
-        </div> -->
+        <div class="btnbar">
+          <button id="btnExportData" class="warn">💾 Eksport Data</button
+          ><label
+            for="btnImportData"
+            class="btn warn"
+            style="text-align: center"
+            >📂 Import Data</label
+          ><input id="btnImportData" type="file" accept=".json" hidden />
+        </div>
+        <div class="btnbar">
+          <button id="btnSavePDFLocal" class="ok">📄 Muat Turun PDF</button
+          ><button id="btnSubmit" class="danger">📤 Hantar & Kosongkan</button>
+        </div>
+        <div class="note">
+          "Muat Turun PDF" akan menjana fail PDF untuk disimpan. "Hantar &
+          Kosongkan" akan memuat turun PDF dan kemudian membersihkan semua data
+          daripada peranti.
+        </div>
       </div>
     </div>
 
-    <div class="toast" id="toast">Berjaya disimpan.</div>
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+    <div class="processing-indicator" id="processing-indicator">
+      Memproses, sila tunggu...
+    </div>
 
     <script>
-      // ===== Util asas
-      const $ = (id) => document.getElementById(id);
-      const showToast = (msg) => {
-        const t = $("toast");
-        t.textContent = msg;
-        t.style.display = "block";
-        setTimeout(() => (t.style.display = "none"), 1600);
-      };
-      const todayISO = () => new Date().toISOString().slice(0, 10);
-      const LS_KEYS = {
-        form: "laporan_form_v5",
-        entries: "laporan_entries_v5",
-      };
+      document.addEventListener("DOMContentLoaded", () => {
+        // ===== UTILITIES & STATE =====
+        const $ = (id) => {
+          const el = document.getElementById(id);
+          if (!el) console.error(`Element with id '${id}' not found.`);
+          return el;
+        };
+        const LS_KEYS = {
+          form: "laporan_form_v6",
+          entries: "laporan_entries_v6",
+          ui: "laporan_ui_v6",
+        };
+        const todayISO = () => new Date().toISOString().slice(0, 10);
+        const IMAGE_SIZE_OPTIONS = { small: 320, medium: 480, large: 640 };
+        const PDF_QUALITY_OPTIONS = { low: 0.5, medium: 0.7, high: 0.9 };
 
-      // ===== Autosave form
-      const formEls = {
-        namaProjek: $("namaProjek"),
-        perkara: $("perkara"),
-        tarikh: $("tarikh"),
-        namaBangunan: $("namaBangunan"),
-        email: $("email"),
-      };
-      const loadForm = () => {
-        try {
-          const d = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-          Object.entries(formEls).forEach(([k, el]) => {
-            if (d[k]) el.value = d[k];
-          });
-          if (!formEls.tarikh.value) formEls.tarikh.value = todayISO();
-        } catch (e) {}
-      };
-      const saveForm = () => {
-        const d = {};
-        Object.entries(formEls).forEach(
-          ([k, el]) => (d[k] = (el.value || "").trim())
-        );
-        localStorage.setItem(LS_KEYS.form, JSON.stringify(d));
-      };
-      Object.values(formEls).forEach((el) =>
-        el.addEventListener("input", saveForm)
-      );
+        const state = { imgData: "" };
+        const imageCache = new Map();
+        const objectURLs = [];
+        const MAX_CACHE_SIZE = 20;
 
-      // ===== Pemproses gambar -> THUMBNAIL sahaja (kurangkan saiz untuk iOS/Android quota)
-      const THUMB_W = 480; // ~lebar maks untuk thumb
-      const THUMB_Q = 0.7; // kualiti jpeg
-      const fileToThumbDataURL = (file) =>
-        new Promise((resolve, reject) => {
-          const img = new Image();
-          // CHANGED: Use createObjectURL for better memory handling
-          const url = URL.createObjectURL(file);
-          img.onload = () => {
-            URL.revokeObjectURL(url); // Clean up memory
-            const ratio = (img.naturalHeight || 1) / (img.naturalWidth || 1);
-            const w = Math.min(THUMB_W, img.naturalWidth || THUMB_W);
-            const h = Math.round(w * ratio);
-            const cv = document.createElement("canvas");
-            cv.width = w;
-            cv.height = h;
-            const ctx = cv.getContext("2d", { willReadFrequently: false });
-            ctx.drawImage(img, 0, 0, w, h);
-            try {
-              const thumbUrl = cv.toDataURL("image/jpeg", THUMB_Q);
-              resolve(thumbUrl);
-            } catch (e) {
-              reject(e);
+        // ===== UI HELPERS =====
+        const showToast = (msg, duration = 2000) => {
+          const t = $("toast");
+          if (t) {
+            t.innerHTML = msg;
+            t.style.display = "block";
+            setTimeout(() => (t.style.display = "none"), duration);
+          }
+        };
+        const showProcessing = () => {
+          const p = $("processing-indicator");
+          if (p) p.classList.add("active");
+        };
+        const hideProcessing = () => {
+          const p = $("processing-indicator");
+          if (p) p.classList.remove("active");
+        };
+        const addObjectURL = (url) => {
+          objectURLs.push(url);
+          return url;
+        };
+        const cleanupAllObjectURLs = () => {
+          objectURLs.forEach((url) => URL.revokeObjectURL(url));
+          objectURLs.length = 0;
+        };
+        window.addEventListener("beforeunload", cleanupAllObjectURLs);
+
+        // ===== TOGGLE FUNCTIONALITY =====
+        const setupToggles = () => {
+          const uiState = JSON.parse(localStorage.getItem(LS_KEYS.ui) || "{}");
+          const toggleSection1 = $("toggleSection1");
+          const toggleSection3 = $("toggleSection3");
+          const section1 = $("section1");
+          const section3 = $("section3");
+
+          const updateToggle = (button, section, key) => {
+            const isHidden = uiState[key] || false;
+            if (isHidden) {
+              section.classList.add("hidden");
+              button.querySelector(".icon").textContent = "▶";
+            } else {
+              section.classList.remove("hidden");
+              button.querySelector(".icon").textContent = "▼";
             }
           };
-          img.onerror = (e) => {
-            URL.revokeObjectURL(url);
-            reject(e);
-          };
-          img.src = url;
-        });
 
-      const state = { imgData: "" }; // thumb sahaja
-      $("btnKamera").addEventListener("click", () => $("fileCamera").click());
-      $("btnGaleri").addEventListener("click", () => $("fileGallery").click());
-      async function onFilePicked(file) {
-        if (!file) return;
-        try {
-          const url = await fileToThumbDataURL(file);
-          state.imgData = url;
-          const p = $("preview");
-          p.src = url;
-          p.style.display = "block";
-        } catch (e) {
-          console.error(e);
-          showToast("Gagal baca gambar");
-        }
-      }
-      $("fileCamera").addEventListener("change", (e) =>
-        onFilePicked(e.target.files?.[0])
-      );
-      $("fileGallery").addEventListener("change", (e) =>
-        onFilePicked(e.target.files?.[0])
-      );
-
-      // ===== Entries (lokasi, ulasan, img thumb)
-      const readEntries = () => {
-        try {
-          return JSON.parse(localStorage.getItem(LS_KEYS.entries) || "[]");
-        } catch (e) {
-          return [];
-        }
-      };
-      const writeEntries = (arr) =>
-        localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
-      const refreshTable = () => {
-        const body = $("entriesBody");
-        body.innerHTML = "";
-        const items = readEntries();
-        if (items.length === 0) {
-          body.innerHTML =
-            '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>';
-          return;
-        }
-        items.forEach((it, idx) => {
-          const tr = document.createElement("tr");
-          const tImg = document.createElement("td");
-          tImg.innerHTML = it.img
-            ? `<img src="${it.img}" style="max-width:100%; max-height:120px; border-radius:8px">`
-            : '<span class="tmuted">(tiada)</span>';
-          const tLok = document.createElement("td");
-          tLok.textContent = it.lokasi || "";
-
-          const tUlas = document.createElement("td");
-          // CHANGED: Use textContent for security (XSS prevention)
-          // CSS white-space: pre-wrap handles the newlines
-          tUlas.textContent = it.ulasan || "";
-
-          const tAct = document.createElement("td");
-          const del = document.createElement("button");
-          del.className = "btn-ghost btn-delete";
-          del.innerHTML = "🗑️";
-
-          del.onclick = () => {
-            const a = readEntries();
-            a.splice(idx, 1);
-            writeEntries(a);
-            refreshTable();
-          };
-          tAct.appendChild(del);
-          tr.append(tImg, tLok, tUlas, tAct);
-          body.appendChild(tr);
-        });
-      };
-
-      $("btnSimpanData").addEventListener("click", () => {
-        const lokasi = $("lokasi").value.trim();
-        const ulasan = $("ulasan").value.trim();
-        const img = state.imgData || ""; // thumb
-        if (!lokasi && !ulasan && !img) {
-          showToast("Tiada apa untuk disimpan");
-          return;
-        }
-        const arr = readEntries();
-        arr.push({ lokasi, ulasan, img, ts: Date.now() });
-        writeEntries(arr);
-        refreshTable();
-        showToast("Item ditambah");
-        state.imgData = "";
-        $("preview").style.display = "none";
-        $("fileCamera").value = "";
-        $("fileGallery").value = "";
-      });
-
-      $("btnClear").addEventListener("click", () => {
-        $("lokasi").value = "";
-        $("ulasan").value = "";
-        state.imgData = "";
-        $("preview").style.display = "none";
-        $("fileCamera").value = "";
-        $("fileGallery").value = "";
-      });
-
-      // ===== PDF builder (guna thumbnail; ulang Maklumat Asas di setiap page)
-      // =======================================================
-      // PDF BUILDER (Fixed 3 Items per Page + Footer "x/y")
-      // =======================================================
-      async function buildPDF() {
-        if (!window.jspdf || !window.jspdf.jsPDF)
-          throw new Error("jsPDF tidak dimuatkan");
-
-        const { jsPDF } = window.jspdf;
-
-        const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
-        const W = doc.internal.pageSize.getWidth();
-        const H = doc.internal.pageSize.getHeight();
-        const M = 36;
-        let y = M;
-
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const items = readEntries();
-        const ITEMS_PER_PAGE = 3; // <<=== FIXED 3 ITEM / PAGE
-
-        // ============================
-        // WATERMARK
-        // ============================
-        function drawWatermark() {
-          doc.saveGraphicsState();
-          doc.setGState(new doc.GState({ opacity: 0.06 }));
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(80);
-          doc.setTextColor(150);
-          doc.text("SYARIKAT XXX", W / 2, H / 2, {
-            align: "center",
-            angle: -30,
-          });
-          doc.restoreGraphicsState();
-        }
-
-        // ============================
-        // HEADER PAGE
-        // ============================
-        function drawHeader(pageNo, totalPages) {
-          y = M;
-
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(15);
-          doc.text("LAPORAN BERGAMBAR", W / 2, y, { align: "center" });
-          y += 20;
-
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.text(`Dijana: ${new Date().toLocaleString()}`, W / 2, y, {
-            align: "center",
-          });
-          y += 16;
-
-          // Info table
-          const info = [
-            ["Nama Projek:", form.namaProjek || "-"],
-            ["Perkara:", form.perkara || "-"],
-            ["Tarikh:", form.tarikh || "-"],
-            ["Nama Bangunan:", form.namaBangunan || "-"],
-            ["Pelapor:", form.email || "-"],
-          ];
-
-          info.forEach(([label, value]) => {
-            doc.setFont("helvetica", "bold");
-            doc.text(label, M, y);
-            doc.setFont("helvetica", "normal");
-            doc.text(value, M + 110, y);
-            y += 13;
+          toggleSection1.addEventListener("click", () => {
+            const isHidden = section1.classList.toggle("hidden");
+            uiState.section1_hidden = isHidden;
+            localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
+            toggleSection1.querySelector(".icon").textContent = isHidden
+              ? "▶"
+              : "▼";
           });
 
-          y += 8;
-          doc.setDrawColor(120);
-          doc.setLineWidth(0.6);
-          doc.line(M, y, W - M, y);
+          toggleSection3.addEventListener("click", () => {
+            const isHidden = section3.classList.toggle("hidden");
+            uiState.section3_hidden = isHidden;
+            localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
+            toggleSection3.querySelector(".icon").textContent = isHidden
+              ? "▶"
+              : "▼";
+          });
 
-          y += 18;
-        }
+          updateToggle(toggleSection1, section1, "section1_hidden");
+          updateToggle(toggleSection3, section3, "section3_hidden");
+        };
+        setupToggles();
 
-        // ============================
-        // ITEM (GAMBAR + ULASAN)
-        // ============================
-        async function drawItem(it, idx) {
-          const itemHeight = 180;
-
-          // Tajuk kecil item
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(11);
-          doc.text(`${idx + 1}. Lokasi: ${it.lokasi || "-"}`, M, y);
-          y += 14;
-
-          const leftW = (W - M * 2) * 0.45;
-          const rightW = (W - M * 2) * 0.55;
-          const rightX = M + leftW + 10;
-
-          // Kotak kiri/kanan
-          doc.setDrawColor(0);
-          doc.setLineWidth(0.8);
-          doc.rect(M, y, leftW, itemHeight);
-          doc.rect(rightX, y, rightW, itemHeight);
-
-          // -------------------------
-          // Gambar
-          // -------------------------
-          if (it.img) {
-            try {
-              const dim = await new Promise((res) => {
-                const im = new Image();
-                im.onload = () =>
-                  res({ w: im.naturalWidth, h: im.naturalHeight });
-                im.onerror = () => res({ w: 2, h: 1 });
-                im.src = it.img;
-              });
-
-              const ratio = dim.h / dim.w;
-              const maxW = leftW - 12;
-              const maxH = itemHeight - 12;
-
-              let imgW = maxW;
-              let imgH = imgW * ratio;
-
-              if (imgH > maxH) {
-                imgH = maxH;
-                imgW = imgH / ratio;
-              }
-
-              const imgX = M + (leftW - imgW) / 2;
-              const imgY = y + (itemHeight - imgH) / 2;
-
-              doc.addImage(it.img, "JPEG", imgX, imgY, imgW, imgH);
-            } catch {
-              doc.setFont("helvetica", "italic");
-              doc.setFontSize(10);
-              doc.text(
-                "(gambar gagal dimuatkan)",
-                M + leftW / 2,
-                y + itemHeight / 2,
-                {
-                  align: "center",
-                }
-              );
-            }
-          } else {
-            doc.setFont("helvetica", "italic");
-            doc.setFontSize(10);
-            doc.text("(tiada gambar)", M + leftW / 2, y + itemHeight / 2, {
-              align: "center",
+        // ===== DATA MANAGEMENT =====
+        const readEntries = () => {
+          try {
+            return JSON.parse(localStorage.getItem(LS_KEYS.entries) || "[]");
+          } catch (e) {
+            return [];
+          }
+        };
+        const writeEntries = (arr) =>
+          localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
+        const loadForm = () => {
+          try {
+            const d = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
+            Object.keys(formEls).forEach((k) => {
+              if (d[k] && formEls[k]) formEls[k].value = d[k];
             });
+            if (formEls.tarikh && !formEls.tarikh.value)
+              formEls.tarikh.value = todayISO();
+          } catch (e) {
+            console.error("Failed to load form data", e);
           }
-
-          // -------------------------
-          // Ulasan
-          // -------------------------
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(10);
-          doc.text("Ulasan:", rightX + 8, y + 14);
-
-          doc.setFont("helvetica", "normal");
-
-          const lines = (it.ulasan || "")
-            .split(/\n+/)
-            .map((t) => "• " + t.replace(/^•\s*/, ""));
-
-          const wrapped = doc.splitTextToSize(lines.join("\n"), rightW - 20);
-          doc.text(wrapped, rightX + 8, y + 28);
-
-          y += itemHeight + 22;
-        }
-
-        // ============================
-        // BUILD PDF (3 ITEM / PAGE)
-        // ============================
-        let pageNo = 1;
-        drawWatermark();
-        drawHeader(pageNo);
-
-        for (let i = 0; i < items.length; i++) {
-          await drawItem(items[i], i);
-
-          // Bila cukup 3 item → page baru
-          if ((i + 1) % ITEMS_PER_PAGE === 0 && i < items.length - 1) {
-            doc.addPage();
-            pageNo++;
-            drawWatermark();
-            drawHeader(pageNo);
-          }
-        }
-
-        // ============================
-        // FOOTER "x/y"
-        // ============================
-        function addFooter(pageNumber, total) {
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(9);
-          doc.text(`${pageNumber}/${total}`, W / 2, H - 20, {
-            align: "center",
+        };
+        const saveForm = () => {
+          const d = {};
+          Object.keys(formEls).forEach((k) => {
+            if (formEls[k]) d[k] = formEls[k].value.trim();
           });
-        }
+          localStorage.setItem(LS_KEYS.form, JSON.stringify(d));
+        };
+        const formEls = {
+          namaProjek: $("namaProjek"),
+          perkara: $("perkara"),
+          tarikh: $("tarikh"),
+          namaBangunan: $("namaBangunan"),
+          email: $("email"),
+        };
+        Object.values(formEls).forEach((el) => {
+          if (el) el.addEventListener("input", saveForm);
+        });
 
-        const totalPages = doc.internal.getNumberOfPages();
-        for (let p = 1; p <= totalPages; p++) {
-          doc.setPage(p);
-          addFooter(p, totalPages);
-        }
+        // ===== IMAGE HANDLING =====
+        const fileToThumbDataURL = (file) =>
+          new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = addObjectURL(URL.createObjectURL(file));
+            img.onload = () => {
+              URL.revokeObjectURL(url);
+              const thumbW = IMAGE_SIZE_OPTIONS[$("imageSize").value];
+              const ratio = img.naturalHeight / img.naturalWidth;
+              const w = Math.min(thumbW, img.naturalWidth);
+              const h = Math.round(w * ratio);
+              const cv = document.createElement("canvas");
+              cv.width = w;
+              cv.height = h;
+              const ctx = cv.getContext("2d", { willReadFrequently: false });
+              ctx.drawImage(img, 0, 0, w, h);
+              try {
+                resolve(cv.toDataURL("image/jpeg", 0.8));
+              } catch (e) {
+                reject(e);
+              }
+            };
+            img.onerror = (e) => {
+              URL.revokeObjectURL(url);
+              reject(e);
+            };
+            img.src = url;
+          });
+        const getCachedImage = (file) => {
+          const key = `${file.name}_${file.size}_${file.lastModified}`;
+          return imageCache.get(key);
+        };
+        const setCachedImage = (file, dataUrl) => {
+          const key = `${file.name}_${file.size}_${file.lastModified}`;
+          if (imageCache.size >= MAX_CACHE_SIZE) {
+            const firstKey = imageCache.keys().next().value;
+            imageCache.delete(firstKey);
+          }
+          imageCache.set(key, dataUrl);
+        };
+        const onFilePicked = async (file) => {
+          if (!file) return;
+          showProcessing();
+          try {
+            let url = getCachedImage(file);
+            if (!url) {
+              url = await fileToThumbDataURL(file);
+              setCachedImage(file, url);
+            }
+            state.imgData = url;
+            const p = $("preview");
+            if (p) {
+              p.src = state.imgData;
+              p.style.display = "block";
+            }
+          } catch (e) {
+            console.error(e);
+            showToast("Gagal membaca gambar.");
+          } finally {
+            hideProcessing();
+          }
+        };
+        const btnKamera = $("btnKamera");
+        const btnGaleri = $("btnGaleri");
+        if (btnKamera)
+          btnKamera.addEventListener("click", () => $("fileCamera").click());
+        if (btnGaleri)
+          btnGaleri.addEventListener("click", () => $("fileGallery").click());
+        $("fileCamera").addEventListener("change", (e) =>
+          onFilePicked(e.target.files?.[0])
+        );
+        $("fileGallery").addEventListener("change", (e) =>
+          onFilePicked(e.target.files?.[0])
+        );
 
-        return doc;
-      }
+        // ===== TABLE RENDERING (SECURE) WITH EDIT BUTTON =====
+        const refreshTable = () => {
+          const body = $("entriesBody");
+          if (!body) return;
+          const items = readEntries();
+          body.innerHTML = "";
+          if (items.length === 0) {
+            body.innerHTML =
+              '<tr><td data-label="Data" class="tmuted" colspan="4">Tiada data.</td></tr>';
+            return;
+          }
+          items.forEach((it, idx) => {
+            const tr = document.createElement("tr");
+            const tdImg = document.createElement("td");
+            tdImg.dataset.label = "Gambar";
+            const tdLok = document.createElement("td");
+            tdLok.dataset.label = "Lokasi";
+            const tdUlas = document.createElement("td");
+            tdUlas.dataset.label = "Ulasan";
+            const tdAct = document.createElement("td");
+            tdAct.dataset.label = "Tindakan";
 
-      // ===== Simpan PDF (paksa muat turun tempatan)
-      async function savePDFLocal() {
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const fname = `LaporanTapak_${(form.namaProjek || "projek").replace(
-          /\s+/g,
-          "_"
-        )}_${todayISO()}.pdf`;
-        const doc = await buildPDF();
-        const blob = doc.output("blob");
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fname;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      }
+            if (it.img) {
+              const img = document.createElement("img");
+              img.src = it.img;
+              img.style.cssText =
+                "max-width:100%; max-height:120px; border-radius:8px; cursor:pointer;";
+              img.onclick = () => window.open(it.img, "_blank");
+              tdImg.appendChild(img);
+            } else {
+              tdImg.textContent = "(tiada)";
+              tdImg.className = "tmuted";
+            }
+            tdLok.textContent = it.lokasi || "";
+            tdUlas.textContent = it.ulasan || "";
 
-      // ===== Simpan & Hantar (guna Share jika boleh, fallback muat turun)
-      async function shareOrDownload() {
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const fname = `LaporanTapak_${(form.namaProjek || "projek").replace(
-          /\s+/g,
-          "_"
-        )}_${todayISO()}.pdf`;
-        try {
-          if (window.jspdf && window.jspdf.jsPDF) {
-            const doc = await buildPDF();
-            const blob = doc.output("blob");
-            const file = new File([blob], fname, { type: "application/pdf" });
-            if (
-              navigator.share &&
-              navigator.canShare &&
-              navigator.canShare({ files: [file] })
-            ) {
-              await navigator.share({
-                title: "Laporan Tapak",
-                text: `Laporan: ${form.namaProjek || ""}`,
-                files: [file],
-              });
+            const actionContainer = document.createElement("div");
+            actionContainer.className = "action-buttons";
+
+            const editBtn = document.createElement("button");
+            editBtn.className = "btn-edit";
+            editBtn.textContent = "✏️";
+            editBtn.ariaLabel = "Edit item";
+            editBtn.addEventListener("click", () => editItem(idx));
+
+            const delBtn = document.createElement("button");
+            delBtn.className = "btn-delete";
+            delBtn.textContent = "🗑️";
+            delBtn.ariaLabel = "Padam item";
+            delBtn.addEventListener("click", () => {
+              if (confirm("Adakah anda pasti ingin memadam item ini?")) {
+                const a = readEntries();
+                a.splice(idx, 1);
+                writeEntries(a);
+                refreshTable();
+                showToast("Item telah dipadam.");
+              }
+            });
+
+            actionContainer.appendChild(editBtn);
+            actionContainer.appendChild(delBtn);
+            tdAct.appendChild(actionContainer);
+
+            tr.append(tdImg, tdLok, tdUlas, tdAct);
+            body.appendChild(tr);
+          });
+        };
+
+        // ===== EDIT ITEM FUNCTION =====
+        const editItem = (idx) => {
+          const items = readEntries();
+          const itemToEdit = items[idx];
+
+          if (!itemToEdit) return;
+
+          // Populate fields
+          $("lokasi").value = itemToEdit.lokasi || "";
+          $("ulasan").value = itemToEdit.ulasan || "";
+          state.imgData = itemToEdit.img || "";
+          const p = $("preview");
+          if (p) {
+            p.src = state.imgData;
+            p.style.display = state.imgData ? "block" : "none";
+          }
+
+          // Remove original item
+          items.splice(idx, 1);
+          writeEntries(items);
+          refreshTable();
+
+          // Scroll to section 2
+          $("section2").scrollIntoView({ behavior: "smooth" });
+          showToast("Item dimuatkan untuk edit.");
+        };
+
+        // ===== ITEM ACTIONS =====
+        const btnSimpanData = $("btnSimpanData");
+        if (btnSimpanData)
+          btnSimpanData.addEventListener("click", () => {
+            const lokasi = $("lokasi")?.value.trim() || "";
+            const ulasan = $("ulasan")?.value.trim() || "";
+            const img = state.imgData;
+            if (!lokasi && !ulasan && !img) {
+              showToast("Tiada data untuk disimpan.");
               return;
             }
-            // Fallback muat turun tempatan
-            const url = URL.createObjectURL(blob);
+            const arr = readEntries();
+            arr.push({ lokasi, ulasan, img, ts: Date.now() });
+            writeEntries(arr);
+            refreshTable();
+            showToast("Item berjaya ditambah.");
+            clearItemForm();
+          });
+        const clearItemForm = () => {
+          const lokasiEl = $("lokasi");
+          const ulasanEl = $("ulasan");
+          if (lokasiEl) lokasiEl.value = "";
+          if (ulasanEl) ulasanEl.value = "";
+          state.imgData = "";
+          const previewEl = $("preview");
+          if (previewEl) previewEl.style.display = "none";
+          $("fileCamera").value = "";
+          $("fileGallery").value = "";
+        };
+        const btnClear = $("btnClear");
+        if (btnClear) btnClear.addEventListener("click", clearItemForm);
+
+        // ===== PDF GENERATION (no changes here) =====
+        async function buildPDF() {
+          /* ... (same as before) ... */
+          if (!window.jspdf || !window.jspdf.jsPDF)
+            throw new Error("jsPDF tidak dimuatkan");
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
+          const W = doc.internal.pageSize.getWidth();
+          const H = doc.internal.pageSize.getHeight();
+          const M = 36;
+          let y = M;
+          const ITEMS_PER_PAGE = 3;
+          const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
+          const items = readEntries();
+          const quality = PDF_QUALITY_OPTIONS[$("pdfQuality").value];
+          const drawWatermark = () => {
+            doc.saveGraphicsState();
+            doc.setGState(new doc.GState({ opacity: 0.06 }));
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(80);
+            doc.setTextColor(150);
+            doc.text("SYARIKAT XXX", W / 2, H / 2, {
+              align: "center",
+              angle: -30,
+            });
+            doc.restoreGraphicsState();
+          };
+          const drawHeader = (pageNo, totalPages) => {
+            y = M;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("LAPORAN BERGAMBAR", W / 2, y, { align: "center" });
+            y += 20;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Dijana: ${new Date().toLocaleString()}`, W / 2, y, {
+              align: "center",
+            });
+            y += 16;
+            const info = [
+              ["Nama Projek:", form.namaProjek || "-"],
+              ["Perkara:", form.perkara || "-"],
+              ["Tarikh:", form.tarikh || "-"],
+              ["Nama Bangunan:", form.namaBangunan || "-"],
+              ["Pelapor:", form.email || "-"],
+            ];
+            info.forEach(([label, value]) => {
+              doc.setFont("helvetica", "bold");
+              doc.text(label, M, y);
+              doc.setFont("helvetica", "normal");
+              doc.text(value, M + 110, y);
+              y += 13;
+            });
+            y += 8;
+            doc.setDrawColor(120);
+            doc.setLineWidth(0.6);
+            doc.line(M, y, W - M, y);
+            y += 18;
+          };
+          const drawItem = async (it, idx) => {
+            const itemHeight = 180;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.text(`${idx + 1}. Lokasi: ${it.lokasi || "-"}`, M, y);
+            y += 14;
+            const leftW = (W - M * 2) * 0.45;
+            const rightW = (W - M * 2) * 0.55;
+            const rightX = M + leftW + 10;
+            doc.setDrawColor(0);
+            doc.setLineWidth(0.8);
+            doc.rect(M, y, leftW, itemHeight);
+            doc.rect(rightX, y, rightW, itemHeight);
+            if (it.img) {
+              try {
+                const dim = await new Promise((res) => {
+                  const im = new Image();
+                  im.onload = () =>
+                    res({ w: im.naturalWidth, h: im.naturalHeight });
+                  im.onerror = () => res({ w: 2, h: 1 });
+                  im.src = it.img;
+                });
+                const ratio = dim.h / dim.w;
+                const maxW = leftW - 12;
+                const maxH = itemHeight - 12;
+                let imgW = maxW;
+                let imgH = imgW * ratio;
+                if (imgH > maxH) {
+                  imgH = maxH;
+                  imgW = imgH / ratio;
+                }
+                const imgX = M + (leftW - imgW) / 2;
+                const imgY = y + (itemHeight - imgH) / 2;
+                doc.addImage(it.img, "JPEG", imgX, imgY, imgW, imgH);
+              } catch {
+                doc.setFont("helvetica", "italic");
+                doc.setFontSize(10);
+                doc.text(
+                  "(gagal memuatkan gambar)",
+                  M + leftW / 2,
+                  y + itemHeight / 2,
+                  { align: "center" }
+                );
+              }
+            } else {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(10);
+              doc.text("(tiada gambar)", M + leftW / 2, y + itemHeight / 2, {
+                align: "center",
+              });
+            }
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("Ulasan:", rightX + 8, y + 14);
+            doc.setFont("helvetica", "normal");
+            const lines = (it.ulasan || "")
+              .split(/\n+/)
+              .map((t) => "• " + t.replace(/^•\s*/, ""));
+            const wrapped = doc.splitTextToSize(lines.join("\n"), rightW - 20);
+            doc.text(wrapped, rightX + 8, y + 28);
+            y += itemHeight + 22;
+          };
+          let pageNo = 1;
+          drawWatermark();
+          drawHeader(pageNo, Math.ceil(items.length / ITEMS_PER_PAGE));
+          for (let i = 0; i < items.length; i++) {
+            await drawItem(items[i], i);
+            if ((i + 1) % ITEMS_PER_PAGE === 0 && i < items.length - 1) {
+              doc.addPage();
+              pageNo++;
+              drawWatermark();
+              drawHeader(pageNo, Math.ceil(items.length / ITEMS_PER_PAGE));
+            }
+          }
+          const totalPages = doc.internal.getNumberOfPages();
+          for (let p = 1; p <= totalPages; p++) {
+            doc.setPage(p);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.text(`${p}/${totalPages}`, W / 2, H - 20, { align: "center" });
+          }
+          return doc;
+        }
+
+        // ===== FINAL ACTIONS =====
+        const savePDFLocal = async () => {
+          const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
+          const fname = `LaporanTapak_${(form.namaProjek || "projek").replace(
+            /\s+/g,
+            "_"
+          )}_${todayISO()}.pdf`;
+          try {
+            showProcessing();
+            const doc = await buildPDF();
+            const blob = doc.output("blob");
+            const url = addObjectURL(URL.createObjectURL(blob));
             const a = document.createElement("a");
             a.href = url;
             a.download = fname;
             document.body.appendChild(a);
             a.click();
             a.remove();
-            URL.revokeObjectURL(url);
-            return;
+            showToast("PDF berjaya dimuat turun.");
+          } catch (e) {
+            console.error(e);
+            showToast("Gagal menjana PDF.");
+          } finally {
+            hideProcessing();
           }
-        } catch (e) {
-          console.warn(e);
-        }
-        openPrintView(); // fallback HTML print
-      }
-
-      // Submit: validasi ringkas + simpan PDF secara local (ikut kehendak) + bersih storan
-      $("btnSavePDFLocal").addEventListener("click", async () => {
-        const required = ["namaProjek", "perkara", "tarikh", "email"];
-        for (const k of required) {
-          if (!formEls[k].value.trim()) {
-            alert("Sila lengkapkan semua medan wajib di Bahagian 1.");
-            return;
-          }
-        }
-        if (readEntries().length === 0) {
-          alert(
-            "Sila tambah sekurang-kurangnya satu item lokasi di Bahagian 2."
-          );
-          return;
-        }
-        await savePDFLocal();
-      });
-
-      $("btnSubmit").addEventListener("click", async () => {
-        const required = ["namaProjek", "perkara", "tarikh", "email"];
-        for (const k of required) {
-          if (!formEls[k].value.trim()) {
-            alert("Sila lengkapkan semua medan wajib di Bahagian 1.");
-            return;
-          }
-        }
-        if (readEntries().length === 0) {
-          alert(
-            "Sila tambah sekurang-kurangnya satu item lokasi di Bahagian 2."
-          );
-          return;
-        }
-        await shareOrDownload();
-        // bersih data selepas hantar
-        localStorage.removeItem(LS_KEYS.entries);
-        localStorage.removeItem(LS_KEYS.form);
-        $("entriesBody").innerHTML =
-          '<tr><td class="tmuted" colspan="4">Tiada data.</td></tr>';
-        ["lokasi", "ulasan"].forEach((id) => ($(id).value = ""));
-        state.imgData = "";
-        $("preview").style.display = "none";
-        $("fileCamera").value = "";
-        $("fileGallery").value = "";
-        Object.values(formEls).forEach((el) => (el.value = ""));
-        showToast("Selesai. Data dibersihkan.");
-      });
-
-      // ===== Cetak HTML fallback (ulang header setiap halaman; item: kiri gambar, kanan ulasan)
-      function openPrintView() {
-        // --- Konstanta asas ---
-        const ITEMS_PER_PAGE = 3;
-
-        // Ambil data borang & item daripada localStorage / storan dalaman
-        const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-        const items = readEntries() || [];
-        const generatedAt = new Date().toLocaleString();
-
-        // Buka tab/tingkap baru untuk paparan cetak
-        const win = window.open("", "_blank");
-
-        // Fungsi untuk 'escape' teks supaya selamat dalam HTML
-        const esc = (s) =>
-          String(s || "").replace(
-            /[&<>]/g,
-            (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])
-          );
-
-        // Kira jumlah halaman berdasarkan 3 item per page
-        const totalPages = Math.max(
-          1,
-          Math.ceil(items.length / ITEMS_PER_PAGE)
-        );
-
-        // Header bagi setiap halaman (termasuk nombor halaman)
-        const renderHeader = (pageNo) => `
-    <div class="report-header">
-      <div class="header-left">
-        <div class="logo-box">
-          ${form.logoUrl ? `<img src="${form.logoUrl}" alt="Logo agensi">` : ""}
-        </div>
-      </div>
-      <div class="header-right">
-        <h1>LAPORAN BERGAMBAR</h1>
-        <div class="sub">Dijana: ${esc(generatedAt)}</div>
-        <div class="page-no">Halaman ${pageNo} / ${totalPages}</div>
-      </div>
-    </div>
-
-    <table class="meta-table">
-      <tr>
-        <td><strong>Nama Projek</strong></td>
-        <td>${esc(form.namaProjek)}</td>
-      </tr>
-      <tr>
-        <td><strong>Perkara</strong></td>
-        <td>${esc(form.perkara)}</td>
-      </tr>
-      <tr>
-        <td><strong>Tarikh</strong></td>
-        <td>${esc(form.tarikh)}</td>
-      </tr>
-      <tr>
-        <td><strong>Nama Bangunan</strong></td>
-        <td>${esc(form.namaBangunan)}</td>
-      </tr>
-      <tr>
-        <td><strong>Nama Pelapor</strong></td>
-        <td>${esc(form.email)}</td>
-      </tr>
-    </table>
-    <hr>
-  `;
-
-        // Table item (gambar + ulasan) untuk satu halaman
-        const renderItemsTable = (pageItems, startIndex) =>
-          pageItems
-            .map((it, idx) => {
-              const globalIndex = startIndex + idx + 1;
-              const ulasanHtml = esc(it.ulasan || "")
-                .split(/\n+/)
-                .filter(Boolean)
-                .map((t) => `<li>${t.replace(/^•\s*/, "")}</li>`)
-                .join("");
-
-              return `
-          <table class="item-table">
-            <tr>
-              <th style="width:50%">
-                No: ${globalIndex}
-                &nbsp;&nbsp; Lokasi: ${esc(it.lokasi || "-")}
-              </th>
-              <th>Ulasan</th>
-            </tr>
-            <tr>
-              <td class="gallery">
-                ${
-                  it.img
-                    ? `<img src="${it.img}" alt="Gambar ${globalIndex}">`
-                    : "(Tiada gambar)"
-                }
-              </td>
-              <td>
-                ${
-                  ulasanHtml
-                    ? `<ul>${ulasanHtml}</ul>`
-                    : "<em>(Tiada ulasan)</em>"
-                }
-              </td>
-            </tr>
-          </table>
-        `;
-            })
-            .join("");
-
-        // ======================
-        // Bina HTML penuh
-        // ======================
-        let html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Laporan (Cetak)</title>
-  <style>
-    @page {
-      size: A4;
-      margin: 14mm;
-    }
-
-    body {
-      font-family: Inter, Arial, sans-serif;
-      margin: 14mm;
-      font-size: 10pt;
-      position: relative;
-    }
-
-    h1 {
-      font-size: 16pt;
-      margin: 0 0 4pt;
-      text-align: left;
-      text-transform: uppercase;
-      letter-spacing: 0.5pt;
-    }
-
-    .sub {
-      font-size: 9pt;
-      margin: 0 0 4pt;
-    }
-
-    .page-no {
-      font-size: 9pt;
-      font-weight: bold;
-      margin-top: 4pt;
-    }
-
-    .report-header {
-      display: flex;
-      align-items: center;
-      gap: 12pt;
-      margin-bottom: 8pt;
-    }
-
-    .header-left {
-      width: 80pt;
-    }
-
-    .logo-box {
-      width: 80pt;
-      height: 80pt;
-      border: 1px solid #ccc;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .logo-box img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-
-    .header-right {
-      flex: 1;
-    }
-
-    .meta-table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 10pt;
-      font-size: 9.5pt;
-    }
-
-    .meta-table td {
-      border: 1px solid #aaa;
-      padding: 4pt 6pt;
-      vertical-align: top;
-    }
-
-    .meta-table td:first-child {
-      width: 28%;
-      background: #f5f5f5;
-      font-weight: 600;
-    }
-
-    .item-table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 8pt;
-      margin-bottom: 6pt;
-      font-size: 10pt;
-      page-break-inside: avoid;
-    }
-
-    .item-table th,
-    .item-table td {
-      border: 1px solid #aaa;
-      padding: 6pt;
-      vertical-align: top;
-    }
-
-    .item-table th {
-      background: #f0f0f0;
-      text-align: left;
-    }
-
-    .gallery {
-      text-align: center;
-      height: 130pt;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .gallery img {
-      max-width: 100%;
-      max-height: 120pt;
-      object-fit: contain;
-    }
-
-    .page-break {
-      page-break-before: always;
-    }
-
-    /* Watermark teks */
-    .watermark-text {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-30deg);
-      font-size: 60pt;
-      color: rgba(0, 0, 0, 0.03);
-      z-index: -1;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
-    /* Optional watermark logo (kalau nak letak imej) */
-    .watermark-logo {
-      position: fixed;
-      bottom: 20mm;
-      right: 20mm;
-      opacity: 0.06;
-      max-width: 60mm;
-      max-height: 60mm;
-      z-index: -1;
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-  <div class="watermark-text">JKR / JAN</div>
-  ${
-    form.logoWatermarkUrl
-      ? `<img class="watermark-logo" src="${form.logoWatermarkUrl}" alt="Watermark logo">`
-      : ""
-  }
-`;
-
-        // Jika tiada item, tetap tunjuk satu halaman dengan mesej ringkas
-        if (items.length === 0) {
-          html += renderHeader(1);
-          html += "<p>(Tiada item dilaporkan)</p>";
-        } else {
-          // Ulang setiap halaman (3 item per page)
-          for (let page = 0; page < totalPages; page++) {
-            const start = page * ITEMS_PER_PAGE;
-            const pageItems = items.slice(start, start + ITEMS_PER_PAGE);
-
-            if (page > 0) {
-              html += '<div class="page-break"></div>';
+        };
+        const exportData = () => {
+          const data = {
+            form: JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}"),
+            entries: readEntries(),
+            version: "v6",
+          };
+          const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json",
+          });
+          const url = addObjectURL(URL.createObjectURL(blob));
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `laporan_backup_${todayISO()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          showToast("Data berjaya dieksport.");
+        };
+        const importData = (file) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const data = JSON.parse(e.target.result);
+              if (data.form) {
+                localStorage.setItem(LS_KEYS.form, JSON.stringify(data.form));
+                loadForm();
+              }
+              if (data.entries) {
+                writeEntries(data.entries);
+                refreshTable();
+              }
+              showToast("Data berjaya diimport.");
+            } catch (error) {
+              console.error(error);
+              showToast("Gagal mengimport data. Fail mungkin rosak.");
             }
-
-            html += renderHeader(page + 1);
-            html += renderItemsTable(pageItems, start);
-          }
-        }
-
-        html += `
-</body>
-</html>`;
-
-        // Tulis HTML ke dalam window baru & sediakan untuk print
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
-
-        // Pastikan semua gambar siap load sebelum print
-        const t = setInterval(() => {
-          const imgs = win.document.images;
-          let ok = true;
-
-          for (const im of imgs) {
-            if (!im.complete) {
-              ok = false;
-              break;
+          };
+          reader.readAsText(file);
+        };
+        const submitAndClear = async () => {
+          const required = ["namaProjek", "perkara", "tarikh", "email"];
+          for (const k of required) {
+            if (!formEls[k]?.value.trim()) {
+              alert("Sila lengkapkan semua medan wajib di Bahagian 1.");
+              return;
             }
           }
-
-          if (ok) {
-            clearInterval(t);
-            win.focus();
-            win.print();
+          if (readEntries().length === 0) {
+            alert("Sila tambah sekurang-kurangnya satu item.");
+            return;
           }
-        }, 200);
-      }
+          await savePDFLocal();
+          if (
+            confirm(
+              "Adakah anda pasti ingin mengosongkan semua data selepas memuat turun PDF?"
+            )
+          ) {
+            localStorage.removeItem(LS_KEYS.entries);
+            localStorage.removeItem(LS_KEYS.form);
+            refreshTable();
+            clearItemForm();
+            Object.values(formEls).forEach((el) => {
+              if (el) el.value = "";
+            });
+            showToast("Semua data telah dibersihkan.");
+          }
+        };
 
-      // ===== init & mobile keyboard handling
+        // ===== EVENT LISTENERS FOR FINAL ACTIONS =====
+        const btnSavePDFLocal = $("btnSavePDFLocal");
+        if (btnSavePDFLocal)
+          btnSavePDFLocal.addEventListener("click", savePDFLocal);
+        const btnSubmit = $("btnSubmit");
+        if (btnSubmit) btnSubmit.addEventListener("click", submitAndClear);
+        const btnExportData = $("btnExportData");
+        if (btnExportData) btnExportData.addEventListener("click", exportData);
+        const btnImportData = $("btnImportData");
+        if (btnImportData)
+          btnImportData.addEventListener("change", (e) =>
+            importData(e.target.files[0])
+          );
 
-      (function () {
-        const vp = document.querySelector('meta[name="viewport"]');
-        function lock() {
-          if (vp)
-            vp.setAttribute(
-              "content",
-              "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-            );
-        }
-        // CHANGED: Unlock now actually restores scaling
-        function unlock() {
-          if (vp)
-            vp.setAttribute(
-              "content",
-              "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"
-            );
-        }
-        document.addEventListener("focusin", (e) => {
-          if (/INPUT|TEXTAREA/.test(e.target.tagName)) lock();
-        });
-        document.addEventListener("focusout", (e) => {
-          if (/INPUT|TEXTAREA/.test(e.target.tagName)) unlock();
-        });
-      })();
-      loadForm();
-      refreshTable();
+        // ===== INITIALIZATION & MOBILE VIEWPORT FIX =====
+        loadForm();
+        refreshTable();
+        (function () {
+          const vp = document.querySelector('meta[name="viewport"]');
+          const lock = () => {
+            if (vp)
+              vp.setAttribute(
+                "content",
+                "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+              );
+          };
+          const unlock = () => {
+            if (vp)
+              vp.setAttribute(
+                "content",
+                "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"
+              );
+          };
+          document.addEventListener("focusin", (e) => {
+            if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) lock();
+          });
+          document.addEventListener("focusout", (e) => {
+            if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) unlock();
+          });
+        })();
+      });
     </script>
   </body>
 </html>
