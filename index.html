@@ -110,12 +110,12 @@
       }
       #entriesTable td:nth-child(3) {
         width: 35%;
-      } /* Adjusted for action buttons */
+      }
       #entriesTable td:nth-child(4) {
         width: 20%;
         text-align: center;
         vertical-align: middle;
-      } /* Adjusted for action buttons */
+      }
 
       @media (max-width: 560px) {
         #entriesTable thead {
@@ -337,18 +337,20 @@
         margin-top: 12px;
       }
 
-      /* Toggle Button Styles */
-      .toggle-btn-container {
+      .section-header {
         display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 10px;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .section-title {
+        margin: 0;
       }
       .toggle-btn {
         background: transparent;
         border: 1px solid var(--border);
         color: var(--muted);
-        padding: 8px 12px;
+        padding: 6px 10px;
         border-radius: 20px;
         font-size: 12px;
         cursor: pointer;
@@ -356,6 +358,7 @@
         display: flex;
         align-items: center;
         gap: 5px;
+        margin-left: 10px;
       }
       .toggle-btn:hover {
         color: var(--text);
@@ -366,11 +369,18 @@
         border-color: var(--accent);
       }
 
+      .section-content {
+        transition: all 0.3s ease-in-out;
+      }
+      .section-content.collapsed {
+        display: none;
+      }
+
       @media print {
         #section4,
         .toast,
         .processing-indicator,
-        .toggle-btn-container {
+        .toggle-btn {
           display: none !important;
         }
         body {
@@ -388,59 +398,56 @@
         tempatan.
       </div>
 
-      <!-- Toggle Buttons -->
-      <div class="toggle-btn-container">
-        <button id="toggleSection1" class="toggle-btn">
-          <span class="icon">▼</span> Maklumat Asas
-        </button>
-        <button id="toggleSection3" class="toggle-btn">
-          <span class="icon">▼</span> Senarai Rekod
-        </button>
-      </div>
-
       <div class="card" id="section1">
-        <h2>Maklumat Asas</h2>
-        <div class="row cols-2">
-          <div>
-            <label for="namaProjek">Nama Projek *</label
-            ><input
-              id="namaProjek"
-              placeholder="Masukkan nama projek"
-              required
-              aria-required="true"
-            />
-          </div>
-          <div>
-            <label for="perkara">Perkara *</label
-            ><input
-              id="perkara"
-              placeholder="Contoh: Pemeriksaan Mekanikal"
-              required
-              aria-required="true"
-            />
-          </div>
-          <div>
-            <label for="tarikh">Tarikh *</label>
-            <div class="date-wrapper">
-              <input id="tarikh" type="date" required aria-required="true" />
+        <div class="section-header">
+          <h2 class="section-title">Maklumat Asas</h2>
+          <button id="toggleSection1" class="toggle-btn">
+            <span class="icon">▼</span>
+          </button>
+        </div>
+        <div class="section-content" id="section1Content">
+          <div class="row cols-2">
+            <div>
+              <label for="namaProjek">Nama Projek *</label
+              ><input
+                id="namaProjek"
+                placeholder="Masukkan nama projek"
+                required
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label for="perkara">Perkara *</label
+              ><input
+                id="perkara"
+                placeholder="Contoh: Pemeriksaan Mekanikal"
+                required
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label for="tarikh">Tarikh *</label>
+              <div class="date-wrapper">
+                <input id="tarikh" type="date" required aria-required="true" />
+              </div>
+            </div>
+            <div>
+              <label for="namaBangunan">Nama Bangunan</label
+              ><input id="namaBangunan" placeholder="Masukkan nama bangunan" />
+            </div>
+            <div>
+              <label for="email">Nama Pelapor *</label
+              ><input
+                id="email"
+                type="email"
+                placeholder="nama@email.com"
+                required
+                aria-required="true"
+              />
             </div>
           </div>
-          <div>
-            <label for="namaBangunan">Nama Bangunan</label
-            ><input id="namaBangunan" placeholder="Masukkan nama bangunan" />
-          </div>
-          <div>
-            <label for="email">Nama Pelapor *</label
-            ><input
-              id="email"
-              type="email"
-              placeholder="nama@email.com"
-              required
-              aria-required="true"
-            />
-          </div>
+          <p class="note">Medan bertanda * adalah wajib diisi.</p>
         </div>
-        <p class="note">Medan bertanda * adalah wajib diisi.</p>
       </div>
 
       <div class="card" id="section2">
@@ -458,14 +465,6 @@
                 ✕
               </button>
             </div>
-          </div>
-          <div>
-            <label for="imageSize">Saiz Gambar (Thumbnail)</label>
-            <select id="imageSize">
-              <option value="small">Kecil (320px)</option>
-              <option value="medium" selected>Sederhana (480px)</option>
-              <option value="large">Besar (640px)</option>
-            </select>
           </div>
           <div>
             <label>Gambar</label>
@@ -525,38 +524,35 @@
       </div>
 
       <div class="card" id="section3">
-        <h2>Senarai Rekod</h2>
-        <table class="table" id="entriesTable">
-          <thead>
-            <tr>
-              <th style="width: 25%">Gambar</th>
-              <th style="width: 20%">Lokasi</th>
-              <th style="width: 35%">Ulasan</th>
-              <th style="width: 20%">Tindakan</th>
-            </tr>
-          </thead>
-          <tbody id="entriesBody">
-            <tr>
-              <td data-label="Gambar" class="tmuted" colspan="4">
-                Tiada data.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="section-header">
+          <h2 class="section-title">Senarai Rekod</h2>
+          <button id="toggleSection3" class="toggle-btn">
+            <span class="icon">▼</span>
+          </button>
+        </div>
+        <div class="section-content" id="section3Content">
+          <table class="table" id="entriesTable">
+            <thead>
+              <tr>
+                <th style="width: 25%">Gambar</th>
+                <th style="width: 20%">Lokasi</th>
+                <th style="width: 35%">Ulasan</th>
+                <th style="width: 20%">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="entriesBody">
+              <tr>
+                <td data-label="Gambar" class="tmuted" colspan="4">
+                  Tiada data.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="card" id="section4">
         <h2>Tindakan Akhir</h2>
-        <div class="row cols-2">
-          <div>
-            <label for="pdfQuality">Kualiti PDF</label
-            ><select id="pdfQuality">
-              <option value="low">Rendah (Saiz Fail Kecil)</option>
-              <option value="medium" selected>Sederhana</option>
-              <option value="high">Tinggi (Saiz Fail Besar)</option>
-            </select>
-          </div>
-        </div>
         <div class="btnbar">
           <button id="btnExportData" class="warn">💾 Eksport Data</button
           ><label
@@ -597,8 +593,6 @@
           ui: "laporan_ui_v6",
         };
         const todayISO = () => new Date().toISOString().slice(0, 10);
-        const IMAGE_SIZE_OPTIONS = { small: 320, medium: 480, large: 640 };
-        const PDF_QUALITY_OPTIONS = { low: 0.5, medium: 0.7, high: 0.9 };
 
         const state = { imgData: "" };
         const imageCache = new Map();
@@ -637,22 +631,22 @@
           const uiState = JSON.parse(localStorage.getItem(LS_KEYS.ui) || "{}");
           const toggleSection1 = $("toggleSection1");
           const toggleSection3 = $("toggleSection3");
-          const section1 = $("section1");
-          const section3 = $("section3");
+          const section1Content = $("section1Content");
+          const section3Content = $("section3Content");
 
-          const updateToggle = (button, section, key) => {
+          const updateToggle = (button, content, key) => {
             const isHidden = uiState[key] || false;
             if (isHidden) {
-              section.classList.add("hidden");
+              content.classList.add("collapsed");
               button.querySelector(".icon").textContent = "▶";
             } else {
-              section.classList.remove("hidden");
+              content.classList.remove("collapsed");
               button.querySelector(".icon").textContent = "▼";
             }
           };
 
           toggleSection1.addEventListener("click", () => {
-            const isHidden = section1.classList.toggle("hidden");
+            const isHidden = section1Content.classList.toggle("collapsed");
             uiState.section1_hidden = isHidden;
             localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
             toggleSection1.querySelector(".icon").textContent = isHidden
@@ -661,7 +655,7 @@
           });
 
           toggleSection3.addEventListener("click", () => {
-            const isHidden = section3.classList.toggle("hidden");
+            const isHidden = section3Content.classList.toggle("collapsed");
             uiState.section3_hidden = isHidden;
             localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
             toggleSection3.querySelector(".icon").textContent = isHidden
@@ -669,8 +663,8 @@
               : "▼";
           });
 
-          updateToggle(toggleSection1, section1, "section1_hidden");
-          updateToggle(toggleSection3, section3, "section3_hidden");
+          updateToggle(toggleSection1, section1Content, "section1_hidden");
+          updateToggle(toggleSection3, section3Content, "section3_hidden");
         };
         setupToggles();
 
@@ -714,14 +708,14 @@
           if (el) el.addEventListener("input", saveForm);
         });
 
-        // ===== IMAGE HANDLING =====
+        // ===== IMAGE HANDLING (FIXED SIZE) =====
         const fileToThumbDataURL = (file) =>
           new Promise((resolve, reject) => {
             const img = new Image();
             const url = addObjectURL(URL.createObjectURL(file));
             img.onload = () => {
               URL.revokeObjectURL(url);
-              const thumbW = IMAGE_SIZE_OPTIONS[$("imageSize").value];
+              const thumbW = 480; // FIXED: Medium size (as requested)
               const ratio = img.naturalHeight / img.naturalWidth;
               const w = Math.min(thumbW, img.naturalWidth);
               const h = Math.round(w * ratio);
@@ -857,14 +851,10 @@
           });
         };
 
-        // ===== EDIT ITEM FUNCTION =====
         const editItem = (idx) => {
           const items = readEntries();
           const itemToEdit = items[idx];
-
           if (!itemToEdit) return;
-
-          // Populate fields
           $("lokasi").value = itemToEdit.lokasi || "";
           $("ulasan").value = itemToEdit.ulasan || "";
           state.imgData = itemToEdit.img || "";
@@ -873,18 +863,13 @@
             p.src = state.imgData;
             p.style.display = state.imgData ? "block" : "none";
           }
-
-          // Remove original item
           items.splice(idx, 1);
           writeEntries(items);
           refreshTable();
-
-          // Scroll to section 2
           $("section2").scrollIntoView({ behavior: "smooth" });
           showToast("Item dimuatkan untuk edit.");
         };
 
-        // ===== ITEM ACTIONS =====
         const btnSimpanData = $("btnSimpanData");
         if (btnSimpanData)
           btnSimpanData.addEventListener("click", () => {
@@ -916,9 +901,8 @@
         const btnClear = $("btnClear");
         if (btnClear) btnClear.addEventListener("click", clearItemForm);
 
-        // ===== PDF GENERATION (no changes here) =====
+        // ===== PDF GENERATION (FIXED QUALITY) =====
         async function buildPDF() {
-          /* ... (same as before) ... */
           if (!window.jspdf || !window.jspdf.jsPDF)
             throw new Error("jsPDF tidak dimuatkan");
           const { jsPDF } = window.jspdf;
@@ -930,7 +914,7 @@
           const ITEMS_PER_PAGE = 3;
           const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
           const items = readEntries();
-          const quality = PDF_QUALITY_OPTIONS[$("pdfQuality").value];
+          const quality = 0.5; // FIXED: Low quality (as requested)
           const drawWatermark = () => {
             doc.saveGraphicsState();
             doc.setGState(new doc.GState({ opacity: 0.06 }));
@@ -1059,13 +1043,13 @@
           return doc;
         }
 
-        // ===== FINAL ACTIONS =====
+        // ===== FINAL ACTIONS (UPDATED FILENAMES) =====
         const savePDFLocal = async () => {
           const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-          const fname = `LaporanTapak_${(form.namaProjek || "projek").replace(
+          const fname = `${(form.namaProjek || "projek").replace(
             /\s+/g,
             "_"
-          )}_${todayISO()}.pdf`;
+          )}_${todayISO()}.pdf`; // Renamed
           try {
             showProcessing();
             const doc = await buildPDF();
@@ -1086,18 +1070,19 @@
           }
         };
         const exportData = () => {
-          const data = {
-            form: JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}"),
-            entries: readEntries(),
-            version: "v6",
-          };
+          const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
+          const fname = `Data_${(form.namaProjek || "projek").replace(
+            /\s+/g,
+            "_"
+          )}_${todayISO()}.json`; // Renamed
+          const data = { form, entries: readEntries(), version: "v6" };
           const blob = new Blob([JSON.stringify(data, null, 2)], {
             type: "application/json",
           });
           const url = addObjectURL(URL.createObjectURL(blob));
           const a = document.createElement("a");
           a.href = url;
-          a.download = `laporan_backup_${todayISO()}.json`;
+          a.download = fname;
           document.body.appendChild(a);
           a.click();
           a.remove();
