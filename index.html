@@ -101,14 +101,8 @@
         background: #0f1a31;
         position: sticky;
         top: 0;
-        /* z-index: 2; */
       }
-      /* #entriesTable td:nth-child(1) {
-        width: 25%;
-      }
-      #entriesTable td:nth-child(2) {
-        width: 20%;
-      } */
+
       #entriesTable td:nth-child(3) {
         width: 45%;
       }
@@ -128,12 +122,6 @@
         #entriesTable td {
           font-size: clamp(12px, 2.5vw, 14px);
         }
-        /* #entriesTable tr {
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          padding: 10px;
-          margin-bottom: 12px;
-        } */
       }
 
       .action-buttons {
@@ -396,10 +384,7 @@
   <body>
     <div class="wrap">
       <h1>📋 Laporan Bergambar</h1>
-      <div class="subtitle">
-        <!-- Borang mudah alih untuk laporan lawatan tapak. Data disimpan secara
-        tempatan. -->
-      </div>
+      <div class="subtitle"></div>
 
       <!-- Section 1 -->
       <div class="card" id="section1">
@@ -557,24 +542,11 @@
         style="padding-bottom: 10px; padding-top: 10px"
       >
         <!-- <h2>Tindakan Akhir</h2> -->
-        <!-- <div class="btnbar">
-          <button id="btnExportData" class="warn">💾 Eksport Data</button
-          ><label
-            for="btnImportData"
-            class="btn warn"
-            style="text-align: center"
-            >📂 Import Data</label
-          ><input id="btnImportData" type="file" accept=".json" hidden />
-        </div> -->
         <div class="btnbar">
           <button id="btnSavePDFLocal" class="ok">Muat Turun PDF</button
           ><button id="btnSubmit" class="danger">Hantar & Kosongkan</button>
         </div>
-        <div class="note">
-          <!-- "Muat Turun PDF" akan menjana fail PDF untuk disimpan. "Hantar &
-          Kosongkan" akan memuat turun PDF dan kemudian membersihkan semua data
-          daripada peranti. -->
-        </div>
+        <div class="note"></div>
       </div>
     </div>
 
@@ -885,19 +857,15 @@
             writeEntries(arr);
             refreshTable();
             showToast("Item berjaya ditambah.");
-            clearItemForm();
+
+            // Hanya kosongkan gambar, bukan semua medan
+            state.imgData = "";
+            const previewEl = $("preview");
+            if (previewEl) previewEl.style.display = "none";
+            $("fileCamera").value = "";
+            $("fileGallery").value = "";
           });
-        const clearItemForm = () => {
-          const lokasiEl = $("lokasi");
-          const ulasanEl = $("ulasan");
-          if (lokasiEl) lokasiEl.value = "";
-          if (ulasanEl) ulasanEl.value = "";
-          state.imgData = "";
-          const previewEl = $("preview");
-          if (previewEl) previewEl.style.display = "none";
-          $("fileCamera").value = "";
-          $("fileGallery").value = "";
-        };
+
         const btnClear = $("btnClear");
         if (btnClear) btnClear.addEventListener("click", clearItemForm);
 
