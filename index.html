@@ -18,9 +18,9 @@
         --text: #e7eefc;
         --muted: #8aa0c6;
         --accent: #4f8cff;
-        --ok: #28a745;
-        --warn: #ffc107;
-        --danger: #dc3545;
+        --ok: #4f8cff;
+        --warn: #4f8cff;
+        --danger: #4f8cff;
         --border: #1d2942;
       }
       * {
@@ -46,11 +46,11 @@
         padding: 16px;
       }
       h1 {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
         margin: 0 0 8px;
       }
       h2 {
-        font-size: 1.1rem;
+        font-size: 0.9rem;
         margin: 0 0 12px;
       }
       .subtitle {
@@ -90,26 +90,27 @@
       #entriesTable th,
       #entriesTable td {
         border-bottom: 1px solid var(--border);
-        padding: 12px 10px;
+        padding: 10px;
         vertical-align: top;
         white-space: pre-wrap;
         word-break: break-word;
         overflow-wrap: break-word;
+        hyphens: auto;
       }
       #entriesTable th {
         background: #0f1a31;
         position: sticky;
         top: 0;
-        z-index: 2;
+        /* z-index: 2; */
       }
-      #entriesTable td:nth-child(1) {
+      /* #entriesTable td:nth-child(1) {
         width: 25%;
       }
       #entriesTable td:nth-child(2) {
         width: 20%;
-      }
+      } */
       #entriesTable td:nth-child(3) {
-        width: 35%;
+        width: 45%;
       }
       #entriesTable td:nth-child(4) {
         width: 20%;
@@ -118,33 +119,21 @@
       }
 
       @media (max-width: 560px) {
-        #entriesTable thead {
+        .table thead {
           display: none;
         }
         #entriesTable,
         #entriesTable tbody,
         #entriesTable tr,
         #entriesTable td {
-          display: block;
-          width: 100% !important;
+          font-size: clamp(12px, 2.5vw, 14px);
         }
-        #entriesTable tr {
+        /* #entriesTable tr {
           border: 1px solid var(--border);
           border-radius: 8px;
           padding: 10px;
           margin-bottom: 12px;
-        }
-        #entriesTable td {
-          border: none;
-          padding: 5px 0;
-        }
-        #entriesTable td:before {
-          content: attr(data-label) ": ";
-          font-weight: 600;
-          color: var(--muted);
-          display: inline-block;
-          width: 80px;
-        }
+        } */
       }
 
       .action-buttons {
@@ -158,13 +147,14 @@
         justify-content: center;
         align-items: center;
         background: transparent;
+        width: 0px;
+        height: 0px;
         border: none;
-        color: var(--muted);
-        font-size: 1.2rem;
+        background: transparent;
+        font-size: 0.8rem;
         cursor: pointer;
-        padding: 5px;
-        border-radius: 6px;
-        transition: all 0.2s ease-in-out;
+        padding: 0px;
+        margin: 0 auto;
       }
       .btn-delete:hover {
         color: var(--danger);
@@ -173,6 +163,12 @@
       .btn-edit:hover {
         color: var(--accent);
         background: rgba(79, 140, 255, 0.12);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        font-size: 0.8rem;
+        padding: 6px 10px;
       }
 
       label {
@@ -187,15 +183,15 @@
       }
       .input-wrap button.clear-btn {
         position: absolute;
-        right: 8px;
+        right: 1px;
         top: 50%;
         transform: translateY(-50%);
         background: transparent;
         border: none;
         color: var(--muted);
-        font-size: 1.2rem;
+        font-size: 1rem;
         cursor: pointer;
-        padding: 5px;
+        width: 50px;
       }
       input,
       textarea,
@@ -258,13 +254,14 @@
         color: var(--text);
         padding: 10px 14px;
         border-radius: 12px;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s ease-in-out;
         text-shadow: 0px 1px 0px #283966;
         flex-grow: 1;
-        min-width: 130px;
+        width: 130px;
+        height: 40px;
       }
       button:hover {
         background: #1a2338;
@@ -279,11 +276,13 @@
         background: var(--ok);
         border-color: var(--ok);
         color: #fff;
+        padding-top: 10px;
+        padding-bottom: 10px;
       }
       button.warn {
         background: var(--warn);
         border-color: var(--warn);
-        color: #000;
+        color: #fff;
       }
       button.danger {
         background: var(--danger);
@@ -345,20 +344,24 @@
       }
       .section-title {
         margin: 0;
+        width: 500px;
       }
       .toggle-btn {
         background: transparent;
         border: 1px solid var(--border);
         color: var(--muted);
-        padding: 6px 10px;
+        display: inline-block;
         border-radius: 20px;
         font-size: 12px;
         cursor: pointer;
         transition: all 0.2s;
         display: flex;
+        justify-content: center;
         align-items: center;
-        gap: 5px;
-        margin-left: 10px;
+        font-weight: 500;
+        text-align: center;
+        padding: 10px 20px;
+        height: 10px;
       }
       .toggle-btn:hover {
         color: var(--text);
@@ -394,16 +397,15 @@
     <div class="wrap">
       <h1>📋 Laporan Bergambar</h1>
       <div class="subtitle">
-        Borang mudah alih untuk laporan lawatan tapak. Data disimpan secara
-        tempatan.
+        <!-- Borang mudah alih untuk laporan lawatan tapak. Data disimpan secara
+        tempatan. -->
       </div>
 
+      <!-- Section 1 -->
       <div class="card" id="section1">
         <div class="section-header">
           <h2 class="section-title">Maklumat Asas</h2>
-          <button id="toggleSection1" class="toggle-btn">
-            <span class="icon">▼</span>
-          </button>
+          <button id="toggleSection1" class="toggle-btn">Hide</button>
         </div>
         <div class="section-content" id="section1Content">
           <div class="row cols-2">
@@ -411,7 +413,7 @@
               <label for="namaProjek">Nama Projek *</label
               ><input
                 id="namaProjek"
-                placeholder="Masukkan nama projek"
+                placeholder=""
                 required
                 aria-required="true"
               />
@@ -420,7 +422,7 @@
               <label for="perkara">Perkara *</label
               ><input
                 id="perkara"
-                placeholder="Contoh: Pemeriksaan Mekanikal"
+                placeholder=""
                 required
                 aria-required="true"
               />
@@ -432,15 +434,15 @@
               </div>
             </div>
             <div>
-              <label for="namaBangunan">Nama Bangunan</label
-              ><input id="namaBangunan" placeholder="Masukkan nama bangunan" />
+              <label for="namaBangunan">Nama Bangunan</label>
+              <input id="namaBangunan" placeholder="" />
             </div>
             <div>
               <label for="email">Nama Pelapor *</label
               ><input
                 id="email"
                 type="email"
-                placeholder="nama@email.com"
+                placeholder=""
                 required
                 aria-required="true"
               />
@@ -456,7 +458,7 @@
           <div>
             <label for="lokasi">Nama bilik / lokasi</label>
             <div class="input-wrap">
-              <input id="lokasi" placeholder="Contoh: Bilik Server 1" /><button
+              <input id="lokasi" placeholder="" /><button
                 type="button"
                 class="clear-btn"
                 onclick="document.getElementById('lokasi').value=''"
@@ -518,17 +520,15 @@
           </div>
         </div>
         <div class="btnbar">
-          <button class="ok" id="btnSimpanData">➕ Simpan Item</button
-          ><button class="warn" id="btnClear">🔄 Set Semula</button>
+          <button class="ok" id="btnSimpanData">Simpan Item</button
+          ><button class="warn" id="btnClear">Set Semula</button>
         </div>
       </div>
 
       <div class="card" id="section3">
         <div class="section-header">
           <h2 class="section-title">Senarai Rekod</h2>
-          <button id="toggleSection3" class="toggle-btn">
-            <span class="icon">▼</span>
-          </button>
+          <button id="toggleSection3" class="toggle-btn">Hide</button>
         </div>
         <div class="section-content" id="section3Content">
           <table class="table" id="entriesTable">
@@ -537,7 +537,7 @@
                 <th style="width: 25%">Gambar</th>
                 <th style="width: 20%">Lokasi</th>
                 <th style="width: 35%">Ulasan</th>
-                <th style="width: 20%">Tindakan</th>
+                <th style="width: 20%"></th>
               </tr>
             </thead>
             <tbody id="entriesBody">
@@ -551,9 +551,13 @@
         </div>
       </div>
 
-      <div class="card" id="section4">
-        <h2>Tindakan Akhir</h2>
-        <div class="btnbar">
+      <div
+        class="card"
+        id="section4"
+        style="padding-bottom: 10px; padding-top: 10px"
+      >
+        <!-- <h2>Tindakan Akhir</h2> -->
+        <!-- <div class="btnbar">
           <button id="btnExportData" class="warn">💾 Eksport Data</button
           ><label
             for="btnImportData"
@@ -561,15 +565,15 @@
             style="text-align: center"
             >📂 Import Data</label
           ><input id="btnImportData" type="file" accept=".json" hidden />
-        </div>
+        </div> -->
         <div class="btnbar">
           <button id="btnSavePDFLocal" class="ok">📄 Muat Turun PDF</button
           ><button id="btnSubmit" class="danger">📤 Hantar & Kosongkan</button>
         </div>
         <div class="note">
-          "Muat Turun PDF" akan menjana fail PDF untuk disimpan. "Hantar &
+          <!-- "Muat Turun PDF" akan menjana fail PDF untuk disimpan. "Hantar &
           Kosongkan" akan memuat turun PDF dan kemudian membersihkan semua data
-          daripada peranti.
+          daripada peranti. -->
         </div>
       </div>
     </div>
@@ -638,10 +642,10 @@
             const isHidden = uiState[key] || false;
             if (isHidden) {
               content.classList.add("collapsed");
-              button.querySelector(".icon").textContent = "▶";
+              button.textContent = "Show";
             } else {
               content.classList.remove("collapsed");
-              button.querySelector(".icon").textContent = "▼";
+              button.textContent = "Hide";
             }
           };
 
@@ -649,18 +653,14 @@
             const isHidden = section1Content.classList.toggle("collapsed");
             uiState.section1_hidden = isHidden;
             localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
-            toggleSection1.querySelector(".icon").textContent = isHidden
-              ? "▶"
-              : "▼";
+            toggleSection1.textContent = isHidden ? "Show" : "Hide";
           });
 
           toggleSection3.addEventListener("click", () => {
             const isHidden = section3Content.classList.toggle("collapsed");
             uiState.section3_hidden = isHidden;
             localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
-            toggleSection3.querySelector(".icon").textContent = isHidden
-              ? "▶"
-              : "▼";
+            toggleSection3.textContent = isHidden ? "Show" : "Hide";
           });
 
           updateToggle(toggleSection1, section1Content, "section1_hidden");
@@ -822,14 +822,14 @@
             const actionContainer = document.createElement("div");
             actionContainer.className = "action-buttons";
 
-            const editBtn = document.createElement("button");
-            editBtn.className = "btn-edit";
+            const editBtn = document.createElement("td");
+            editBtn.className = "btn-ghost btn-edit";
             editBtn.textContent = "✏️";
             editBtn.ariaLabel = "Edit item";
             editBtn.addEventListener("click", () => editItem(idx));
 
-            const delBtn = document.createElement("button");
-            delBtn.className = "btn-delete";
+            const delBtn = document.createElement("td");
+            delBtn.className = "btn-ghost btn-delete";
             delBtn.textContent = "🗑️";
             delBtn.ariaLabel = "Padam item";
             delBtn.addEventListener("click", () => {
@@ -914,7 +914,7 @@
           const ITEMS_PER_PAGE = 3;
           const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
           const items = readEntries();
-          const quality = 0.5; // FIXED: Low quality (as requested)
+          const quality = 0.5; // FIXED: Low quality
           const drawWatermark = () => {
             doc.saveGraphicsState();
             doc.setGState(new doc.GState({ opacity: 0.06 }));
