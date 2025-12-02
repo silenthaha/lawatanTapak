@@ -555,596 +555,1190 @@
       Memproses, sila tunggu...
     </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        // ===== UTILITIES & STATE =====
-        const $ = (id) => {
-          const el = document.getElementById(id);
-          if (!el) console.error(`Element with id '${id}' not found.`);
-          return el;
-        };
-        const LS_KEYS = {
-          form: "laporan_form_v6",
-          entries: "laporan_entries_v6",
-          ui: "laporan_ui_v6",
-        };
-        const todayISO = () => new Date().toISOString().slice(0, 10);
-
-        const state = { imgData: "" };
-        const imageCache = new Map();
-        const objectURLs = [];
-        const MAX_CACHE_SIZE = 20;
-
-        // ===== UI HELPERS =====
-        const showToast = (msg, duration = 3000) => {
-          const t = $("toast");
-          if (t) {
-            t.innerHTML = msg;
-            t.style.display = "block";
-            setTimeout(() => (t.style.display = "none"), duration);
+    <!DOCTYPE html>
+    <html lang="ms">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Laporan Bergambar — Mobile (Optimized & Secure)</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+        <style>
+          :root {
+            --bg: #0b1220;
+            --card: #121a2b;
+            --text: #e7eefc;
+            --muted: #8aa0c6;
+            --accent: #4f8cff;
+            --ok: #4f8cff;
+            --warn: #4f8cff;
+            --danger: #4f8cff;
+            --border: #1d2942;
           }
-        };
-        const showProcessing = () => {
-          const p = $("processing-indicator");
-          if (p) p.classList.add("active");
-        };
-        const hideProcessing = () => {
-          const p = $("processing-indicator");
-          if (p) p.classList.remove("active");
-        };
-        const addObjectURL = (url) => {
-          objectURLs.push(url);
-          return url;
-        };
-        const cleanupAllObjectURLs = () => {
-          objectURLs.forEach((url) => URL.revokeObjectURL(url));
-          objectURLs.length = 0;
-        };
-        window.addEventListener("beforeunload", cleanupAllObjectURLs);
-
-        // ===== TOGGLE FUNCTIONALITY =====
-        const setupToggles = () => {
-          const uiState = JSON.parse(localStorage.getItem(LS_KEYS.ui) || "{}");
-          const toggleSection1 = $("toggleSection1");
-          const toggleSection3 = $("toggleSection3");
-          const section1Content = $("section1Content");
-          const section3Content = $("section3Content");
-
-          const updateToggle = (button, content, key) => {
-            const isHidden = uiState[key] || false;
-            if (isHidden) {
-              content.classList.add("collapsed");
-              button.textContent = "Show";
-            } else {
-              content.classList.remove("collapsed");
-              button.textContent = "Hide";
+          * {
+            box-sizing: border-box;
+          }
+          html,
+          body {
+            height: 100%;
+            touch-action: manipulation;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+          body {
+            margin: 0;
+            font-family: Inter, system-ui, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-text-size-adjust: 100%;
+          }
+          .wrap {
+            max-width: 860px;
+            margin-inline: auto;
+            padding: 16px;
+          }
+          h1 {
+            font-size: 1.2rem;
+            margin: 0 0 8px;
+          }
+          h2 {
+            font-size: 0.9rem;
+            margin: 0 0 12px;
+          }
+          .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+          }
+          .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 16px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease-in-out;
+          }
+          .card.hidden {
+            display: none;
+          }
+          .row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          @media (min-width: 768px) {
+            .row.cols-2 {
+              grid-template-columns: 1fr 1fr;
             }
-          };
-
-          toggleSection1.addEventListener("click", () => {
-            const isHidden = section1Content.classList.toggle("collapsed");
-            uiState.section1_hidden = isHidden;
-            localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
-            toggleSection1.textContent = isHidden ? "Show" : "Hide";
-          });
-
-          toggleSection3.addEventListener("click", () => {
-            const isHidden = section3Content.classList.toggle("collapsed");
-            uiState.section3_hidden = isHidden;
-            localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
-            toggleSection3.textContent = isHidden ? "Show" : "Hide";
-          });
-
-          updateToggle(toggleSection1, section1Content, "section1_hidden");
-          updateToggle(toggleSection3, section3Content, "section3_hidden");
-        };
-        setupToggles();
-
-        // ===== DATA MANAGEMENT =====
-        const readEntries = () => {
-          try {
-            return JSON.parse(localStorage.getItem(LS_KEYS.entries) || "[]");
-          } catch (e) {
-            console.error("Error reading entries from localStorage:", e);
-            return [];
           }
-        };
-        const writeEntries = (arr) =>
-          localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
-        const loadForm = () => {
-          try {
-            const d = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-            Object.keys(formEls).forEach((k) => {
-              if (d[k] && formEls[k]) formEls[k].value = d[k];
-            });
-            if (formEls.tarikh && !formEls.tarikh.value)
-              formEls.tarikh.value = todayISO();
-          } catch (e) {
-            console.error("Failed to load form data", e);
-          }
-        };
-        const saveForm = () => {
-          const d = {};
-          Object.keys(formEls).forEach((k) => {
-            if (formEls[k]) d[k] = formEls[k].value.trim();
-          });
-          localStorage.setItem(LS_KEYS.form, JSON.stringify(d));
-        };
-        const formEls = {
-          namaProjek: $("namaProjek"),
-          perkara: $("perkara"),
-          tarikh: $("tarikh"),
-          namaBangunan: $("namaBangunan"),
-          email: $("email"),
-        };
-        Object.values(formEls).forEach((el) => {
-          if (el) el.addEventListener("input", saveForm);
-        });
 
-        // ===== IMAGE HANDLING (FIXED SIZE) =====
-        const fileToThumbDataURL = (file) =>
-          new Promise((resolve, reject) => {
-            const img = new Image();
-            const url = addObjectURL(URL.createObjectURL(file));
-            img.onload = () => {
-              URL.revokeObjectURL(url);
-              const thumbW = 480;
-              const ratio = img.naturalHeight / img.naturalWidth;
-              const w = Math.min(thumbW, img.naturalWidth);
-              const h = Math.round(w * ratio);
-              const cv = document.createElement("canvas");
-              cv.width = w;
-              cv.height = h;
-              const ctx = cv.getContext("2d", { willReadFrequently: false });
-              ctx.drawImage(img, 0, 0, w, h);
-              try {
-                resolve(cv.toDataURL("image/jpeg", 0.8));
-              } catch (e) {
-                reject(e);
+          #entriesTable {
+            table-layout: fixed;
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.92rem;
+          }
+          #entriesTable th,
+          #entriesTable td {
+            border-bottom: 1px solid var(--border);
+            padding: 10px;
+            vertical-align: top;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+          }
+          #entriesTable th {
+            background: #0f1a31;
+            position: sticky;
+            top: 0;
+          }
+
+          #entriesTable td:nth-child(3) {
+            width: 45%;
+          }
+          #entriesTable td:nth-child(4) {
+            width: 20%;
+            text-align: center;
+            vertical-align: middle;
+          }
+
+          @media (max-width: 560px) {
+            .table thead {
+              display: none;
+            }
+            #entriesTable,
+            #entriesTable tbody,
+            #entriesTable tr,
+            #entriesTable td {
+              font-size: clamp(12px, 2.5vw, 14px);
+            }
+          }
+
+          .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+          }
+          .btn-delete,
+          .btn-edit {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+            width: 0px;
+            height: 0px;
+            border: none;
+            background: transparent;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 0px;
+            margin: 0 auto;
+          }
+          .btn-delete:hover {
+            color: var(--danger);
+            background: rgba(220, 53, 69, 0.12);
+          }
+          .btn-edit:hover {
+            color: var(--accent);
+            background: rgba(79, 140, 255, 0.12);
+          }
+
+          .btn-ghost {
+            background: transparent;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+          }
+
+          label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+          }
+          .input-wrap {
+            position: relative;
+          }
+          .input-wrap button.clear-btn {
+            position: absolute;
+            right: 1px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-size: 1rem;
+            cursor: pointer;
+            width: 50px;
+          }
+          input,
+          textarea,
+          select {
+            width: 100%;
+            padding: 12px;
+            background: #0c1529;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            line-height: 1.4;
+            transition: border-color 0.2s;
+          }
+          input:focus,
+          textarea:focus,
+          select:focus {
+            outline: none;
+            border-color: var(--accent);
+          }
+          input[type="date"] {
+            padding: 10px 12px;
+          }
+          input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+          }
+          .date-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+          }
+          .date-wrapper::after {
+            content: "📅";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 1.2rem;
+          }
+          textarea {
+            min-height: 100px;
+            resize: vertical;
+          }
+          .btnbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 16px;
+          }
+          button {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: #0f1a31;
+            color: var(--text);
+            padding: 5px 5px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-shadow: 0px 1px 0px #283966;
+            flex-grow: 1;
+            width: 130px;
+            height: 40px;
+          }
+          button:hover {
+            background: #1a2338;
+            transform: translateY(-2px);
+          }
+          button.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+          }
+          button.ok {
+            background: var(--ok);
+            border-color: var(--ok);
+            color: #fff;
+            padding-top: 10px;
+            padding-bottom: 10px;
+          }
+          button.warn {
+            background: var(--warn);
+            border-color: var(--warn);
+            color: #fff;
+          }
+          button.danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+          }
+          .thumb {
+            display: block;
+            width: 100%;
+            max-height: 180px;
+            object-fit: contain;
+            background: #0c1529;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            margin-top: 8px;
+          }
+          .tmuted {
+            color: var(--muted);
+          }
+          .toast,
+          .processing-indicator {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            z-index: 1000;
+            font-size: 14px;
+            text-align: center;
+          }
+          .toast {
+            bottom: 20px;
+            background: #091021;
+            color: #fff;
+            display: none;
+          }
+          .processing-indicator {
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(9, 16, 33, 0.9);
+            color: #fff;
+            display: none;
+          }
+          .processing-indicator.active {
+            display: block;
+          }
+          .note {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 12px;
+          }
+
+          .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+          }
+          .section-title {
+            margin: 0;
+            width: 500px;
+          }
+          .toggle-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            display: inline-block;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 500;
+            text-align: center;
+            padding: 10px 20px;
+            height: 10px;
+          }
+          .toggle-btn:hover {
+            color: var(--text);
+            border-color: var(--accent);
+          }
+          .toggle-btn.active {
+            color: var(--accent);
+            border-color: var(--accent);
+          }
+
+          .section-content {
+            transition: all 0.3s ease-in-out;
+          }
+          .section-content.collapsed {
+            display: none;
+          }
+
+          @media print {
+            #section4,
+            .toast,
+            .processing-indicator,
+            .toggle-btn {
+              display: none !important;
+            }
+            body {
+              background: #fff;
+              color: #000;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="wrap">
+          <h1>📋 Laporan Bergambar</h1>
+          <div class="subtitle"></div>
+
+          <!-- Section 1 -->
+          <div class="card" id="section1">
+            <div class="section-header">
+              <h2 class="section-title">Maklumat Asas</h2>
+              <button id="toggleSection1" class="toggle-btn">Hide</button>
+            </div>
+            <div class="section-content" id="section1Content">
+              <div class="row cols-2">
+                <div>
+                  <label for="namaProjek">Nama Projek *</label
+                  ><input
+                    id="namaProjek"
+                    placeholder=""
+                    required
+                    aria-required="true"
+                  />
+                </div>
+                <div>
+                  <label for="perkara">Perkara *</label
+                  ><input
+                    id="perkara"
+                    placeholder=""
+                    required
+                    aria-required="true"
+                  />
+                </div>
+                <div>
+                  <label for="tarikh">Tarikh *</label>
+                  <div class="date-wrapper">
+                    <input
+                      id="tarikh"
+                      type="date"
+                      required
+                      aria-required="true"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label for="namaBangunan">Nama Bangunan</label>
+                  <input id="namaBangunan" placeholder="" />
+                </div>
+                <div>
+                  <label for="email">Nama Pelapor *</label
+                  ><input
+                    id="email"
+                    type="email"
+                    placeholder=""
+                    required
+                    aria-required="true"
+                  />
+                </div>
+              </div>
+              <p class="note">Medan bertanda * adalah wajib diisi.</p>
+            </div>
+          </div>
+
+          <div class="card" id="section2">
+            <h2>Butiran Lokasi</h2>
+            <div class="row">
+              <div>
+                <label for="lokasi">Nama bilik / lokasi</label>
+                <div class="input-wrap">
+                  <input id="lokasi" placeholder="" /><button
+                    type="button"
+                    class="clear-btn"
+                    onclick="document.getElementById('lokasi').value=''"
+                    aria-label="Kosongkan lokasi"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label>Gambar</label>
+                <div class="btnbar">
+                  <input
+                    id="fileCamera"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    hidden
+                  />
+                  <input id="fileGallery" type="file" accept="image/*" hidden />
+                  <button
+                    id="btnKamera"
+                    class="primary"
+                    aria-label="Ambil gambar menggunakan kamera"
+                  >
+                    📷 Kamera
+                  </button>
+                  <button
+                    id="btnGaleri"
+                    class="primary"
+                    aria-label="Pilih gambar dari galeri"
+                  >
+                    🖼️ Galeri
+                  </button>
+                </div>
+                <img
+                  id="preview"
+                  class="thumb"
+                  alt="Pratonton gambar"
+                  style="display: none"
+                />
+              </div>
+              <div>
+                <label for="ulasan">Ulasan</label>
+                <div class="input-wrap">
+                  <textarea
+                    id="ulasan"
+                    placeholder="• Ulasan 1&#10;• Ulasan 2&#10;• Ulasan 3"
+                  ></textarea
+                  ><button
+                    type="button"
+                    class="clear-btn"
+                    onclick="document.getElementById('ulasan').value=''"
+                    aria-label="Kosongkan ulasan"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="btnbar">
+              <button class="ok" id="btnSimpanData">Simpan Item</button
+              ><button class="warn" id="btnClear">Set Semula</button>
+            </div>
+          </div>
+
+          <div class="card" id="section3">
+            <div class="section-header">
+              <h2 class="section-title">Senarai Rekod</h2>
+              <button id="toggleSection3" class="toggle-btn">Hide</button>
+            </div>
+            <div class="section-content" id="section3Content">
+              <table class="table" id="entriesTable">
+                <thead>
+                  <tr>
+                    <th style="width: 25%">Gambar</th>
+                    <th style="width: 20%">Lokasi</th>
+                    <th style="width: 35%">Ulasan</th>
+                    <th style="width: 20%"></th>
+                  </tr>
+                </thead>
+                <tbody id="entriesBody">
+                  <tr>
+                    <td data-label="Gambar" class="tmuted" colspan="4">
+                      Tiada data.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div
+            class="card"
+            id="section4"
+            style="padding-bottom: 10px; padding-top: 10px"
+          >
+            <!-- <h2>Tindakan Akhir</h2> -->
+            <div class="btnbar">
+              <button id="btnSavePDFLocal" class="ok">Muat Turun PDF</button
+              ><button id="btnSubmit" class="danger">Hantar & Kosongkan</button>
+            </div>
+            <div class="note"></div>
+          </div>
+        </div>
+
+        <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+        <div class="processing-indicator" id="processing-indicator">
+          Memproses, sila tunggu...
+        </div>
+
+        <script>
+          document.addEventListener("DOMContentLoaded", () => {
+            // ===== UTILITIES & STATE =====
+            const $ = (id) => {
+              const el = document.getElementById(id);
+              if (!el) console.error(`Element with id '${id}' not found.`);
+              return el;
+            };
+            const LS_KEYS = {
+              form: "laporan_form_v6",
+              entries: "laporan_entries_v6",
+              ui: "laporan_ui_v6",
+            };
+            const todayISO = () => new Date().toISOString().slice(0, 10);
+
+            const state = { imgData: "" };
+            const imageCache = new Map();
+            const objectURLs = [];
+            const MAX_CACHE_SIZE = 20;
+
+            // ===== UI HELPERS =====
+            const showToast = (msg, duration = 3000) => {
+              const t = $("toast");
+              if (t) {
+                t.innerHTML = msg;
+                t.style.display = "block";
+                setTimeout(() => (t.style.display = "none"), duration);
               }
             };
-            img.onerror = (e) => {
-              URL.revokeObjectURL(url);
-              reject(e);
+            const showProcessing = () => {
+              const p = $("processing-indicator");
+              if (p) p.classList.add("active");
             };
-            img.src = url;
-          });
-        const getCachedImage = (file) => {
-          const key = `${file.name}_${file.size}_${file.lastModified}`;
-          return imageCache.get(key);
-        };
-        const setCachedImage = (file, dataUrl) => {
-          const key = `${file.name}_${file.size}_${file.lastModified}`;
-          if (imageCache.size >= MAX_CACHE_SIZE) {
-            const firstKey = imageCache.keys().next().value;
-            imageCache.delete(firstKey);
-          }
-          imageCache.set(key, dataUrl);
-        };
-        const onFilePicked = async (file) => {
-          if (!file) return;
-          showProcessing();
-          try {
-            let url = getCachedImage(file);
-            if (!url) {
-              url = await fileToThumbDataURL(file);
-              setCachedImage(file, url);
-            }
-            state.imgData = url;
-            const p = $("preview");
-            if (p) {
-              p.src = state.imgData;
-              p.style.display = "block";
-            }
-          } catch (e) {
-            console.error(e);
-            showToast("Gagal membaca gambar. Sila cuba lagi.");
-          } finally {
-            hideProcessing();
-          }
-        };
-        const btnKamera = $("btnKamera");
-        const btnGaleri = $("btnGaleri");
-        if (btnKamera)
-          btnKamera.addEventListener("click", () => $("fileCamera").click());
-        if (btnGaleri)
-          btnGaleri.addEventListener("click", () => $("fileGallery").click());
-        $("fileCamera").addEventListener("change", (e) =>
-          onFilePicked(e.target.files?.[0])
-        );
-        $("fileGallery").addEventListener("change", (e) =>
-          onFilePicked(e.target.files?.[0])
-        );
+            const hideProcessing = () => {
+              const p = $("processing-indicator");
+              if (p) p.classList.remove("active");
+            };
+            const addObjectURL = (url) => {
+              objectURLs.push(url);
+              return url;
+            };
+            const cleanupAllObjectURLs = () => {
+              objectURLs.forEach((url) => URL.revokeObjectURL(url));
+              objectURLs.length = 0;
+            };
+            window.addEventListener("beforeunload", cleanupAllObjectURLs);
 
-        // ===== TABLE RENDERING (SECURE) WITH EDIT BUTTON =====
-        const refreshTable = () => {
-          const body = $("entriesBody");
-          if (!body) return;
-          const items = readEntries();
-          body.innerHTML = "";
-          if (items.length === 0) {
-            body.innerHTML =
-              '<tr><td data-label="Data" class="tmuted" colspan="4">Tiada data.</td></tr>';
-            return;
-          }
-          items.forEach((it, idx) => {
-            const tr = document.createElement("tr");
-            const tdImg = document.createElement("td");
-            tdImg.dataset.label = "Gambar";
-            const tdLok = document.createElement("td");
-            tdLok.dataset.label = "Lokasi";
-            const tdUlas = document.createElement("td");
-            tdUlas.dataset.label = "Ulasan";
-            const tdAct = document.createElement("td");
-            tdAct.dataset.label = "Tindakan";
+            // ===== TOGGLE FUNCTIONALITY =====
+            const setupToggles = () => {
+              const uiState = JSON.parse(
+                localStorage.getItem(LS_KEYS.ui) || "{}"
+              );
+              const toggleSection1 = $("toggleSection1");
+              const toggleSection3 = $("toggleSection3");
+              const section1Content = $("section1Content");
+              const section3Content = $("section3Content");
 
-            if (it.img) {
-              const img = document.createElement("img");
-              img.src = it.img;
-              img.style.cssText =
-                "max-width:100%; max-height:120px; border-radius:8px; cursor:pointer;";
-              img.onclick = () => window.open(it.img, "_blank");
-              tdImg.appendChild(img);
-            } else {
-              tdImg.textContent = "(tiada)";
-              tdImg.className = "tmuted";
-            }
-            tdLok.textContent = it.lokasi || "";
-            tdUlas.textContent = it.ulasan || "";
-
-            const actionContainer = document.createElement("div");
-            actionContainer.className = "action-buttons";
-
-            const editBtn = document.createElement("button"); // Changed to button for better semantics
-            editBtn.type = "button";
-            editBtn.className = "btn-ghost btn-edit";
-            editBtn.textContent = "✏️";
-            editBtn.ariaLabel = "Edit item";
-            editBtn.addEventListener("click", () => editItem(idx));
-
-            const delBtn = document.createElement("button"); // Changed to button
-            delBtn.type = "button";
-            delBtn.className = "btn-ghost btn-delete";
-            delBtn.textContent = "🗑️";
-            delBtn.ariaLabel = "Padam item";
-            delBtn.addEventListener("click", () => {
-              if (confirm("Adakah anda pasti ingin memadam item ini?")) {
-                const a = readEntries();
-                a.splice(idx, 1);
-                writeEntries(a);
-                refreshTable();
-                showToast("Item telah dipadam.");
-              }
-            });
-
-            actionContainer.appendChild(editBtn);
-            actionContainer.appendChild(delBtn);
-            tdAct.appendChild(actionContainer);
-
-            tr.append(tdImg, tdLok, tdUlas, tdAct);
-            body.appendChild(tr);
-          });
-        };
-
-        const editItem = (idx) => {
-          const items = readEntries();
-          const itemToEdit = items[idx];
-          if (!itemToEdit) return;
-          $("lokasi").value = itemToEdit.lokasi || "";
-          $("ulasan").value = itemToEdit.ulasan || "";
-          state.imgData = itemToEdit.img || "";
-          const p = $("preview");
-          if (p) {
-            p.src = state.imgData;
-            p.style.display = state.imgData ? "block" : "none";
-          }
-          items.splice(idx, 1);
-          writeEntries(items);
-          refreshTable();
-          $("section2").scrollIntoView({ behavior: "smooth" });
-          showToast("Item dimuatkan untuk edit.");
-        };
-
-        const btnSimpanData = $("btnSimpanData");
-        if (btnSimpanData)
-          btnSimpanData.addEventListener("click", () => {
-            const lokasi = $("lokasi")?.value.trim() || "";
-            const ulasan = $("ulasan")?.value.trim() || "";
-            const img = state.imgData;
-            if (!lokasi && !ulasan && !img) {
-              showToast("Tiada data untuk disimpan.");
-              return;
-            }
-            const arr = readEntries();
-            arr.push({ lokasi, ulasan, img, ts: Date.now() });
-            writeEntries(arr);
-            refreshTable();
-            showToast("Item berjaya ditambah.");
-
-            // Hanya kosongkan gambar, bukan semua medan
-            state.imgData = "";
-            const previewEl = $("preview");
-            if (previewEl) previewEl.style.display = "none";
-            $("fileCamera").value = "";
-            $("fileGallery").value = "";
-          });
-        const clearItemForm = () => {
-          const lokasiEl = $("lokasi");
-          const ulasanEl = $("ulasan");
-          if (lokasiEl) lokasiEl.value = "";
-          if (ulasanEl) ulasanEl.value = "";
-          state.imgData = "";
-          const previewEl = $("preview");
-          if (previewEl) previewEl.style.display = "none";
-          $("fileCamera").value = "";
-          $("fileGallery").value = "";
-        };
-        const btnClear = $("btnClear");
-        if (btnClear) btnClear.addEventListener("click", clearItemForm);
-
-        // ===== PDF GENERATION (IMPROVED & ROBUST) =====
-        async function buildPDF() {
-          if (!window.jspdf || !window.jspdf.jsPDF) {
-            throw new Error("jsPDF library failed to load.");
-          }
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
-          const W = doc.internal.pageSize.getWidth();
-          const H = doc.internal.pageSize.getHeight();
-          const M = 36;
-          let y = M;
-          const ITEMS_PER_PAGE = 3;
-          const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-          const items = readEntries();
-          const quality = 0.5;
-
-          const drawWatermark = () => {
-            doc.saveGraphicsState();
-            doc.setGState(new doc.GState({ opacity: 0.06 }));
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(80);
-            doc.setTextColor(150);
-            doc.text("SYARIKAT XXX", W / 2, H / 2, {
-              align: "center",
-              angle: -30,
-            });
-            doc.restoreGraphicsState();
-          };
-
-          const drawHeader = (pageNo, totalPages) => {
-            y = M;
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("LAPORAN BERGAMBAR", W / 2, y, { align: "center" });
-            y += 20;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(10);
-            doc.text(`Dijana: ${new Date().toLocaleString()}`, W / 2, y, {
-              align: "center",
-            });
-            y += 16;
-            const info = [
-              ["Nama Projek:", form.namaProjek || "-"],
-              ["Perkara:", form.perkara || "-"],
-              ["Tarikh:", form.tarikh || "-"],
-              ["Nama Bangunan:", form.namaBangunan || "-"],
-              ["Pelapor:", form.email || "-"],
-            ];
-            info.forEach(([label, value]) => {
-              doc.setFont("helvetica", "bold");
-              doc.text(label, M, y);
-              doc.setFont("helvetica", "normal");
-              doc.text(value, M + 110, y);
-              y += 13;
-            });
-            y += 8;
-            doc.setDrawColor(120);
-            doc.setLineWidth(0.6);
-            doc.line(M, y, W - M, y);
-            y += 18;
-          };
-
-          const drawItem = async (it, idx) => {
-            const itemHeight = 180;
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(11);
-            doc.text(`${idx + 1}. Lokasi: ${it.lokasi || "-"}`, M, y);
-            y += 14;
-            const leftW = (W - M * 2) * 0.45;
-            const rightW = (W - M * 2) * 0.55;
-            const rightX = M + leftW + 10;
-            doc.setDrawColor(0);
-            doc.setLineWidth(0.8);
-            doc.rect(M, y, leftW, itemHeight);
-            doc.rect(rightX, y, rightW, itemHeight);
-
-            if (it.img) {
-              try {
-                // Use Promise.race to add a timeout and prevent hanging
-                const dim = await Promise.race([
-                  new Promise((res, rej) => {
-                    const im = new Image();
-                    im.onload = () =>
-                      res({ w: im.naturalWidth, h: im.naturalHeight });
-                    im.onerror = () =>
-                      rej(new Error("Failed to load image data."));
-                    im.src = it.img;
-                  }),
-                  new Promise((_, rej) =>
-                    setTimeout(
-                      () => rej(new Error("Image loading timed out.")),
-                      5000
-                    )
-                  ), // 5 second timeout
-                ]);
-
-                const ratio = dim.h / dim.w;
-                const maxW = leftW - 12;
-                const maxH = itemHeight - 12;
-                let imgW = maxW;
-                let imgH = imgW * ratio;
-                if (imgH > maxH) {
-                  imgH = maxH;
-                  imgW = imgH / ratio;
+              const updateToggle = (button, content, key) => {
+                const isHidden = uiState[key] || false;
+                if (isHidden) {
+                  content.classList.add("collapsed");
+                  button.textContent = "Show";
+                } else {
+                  content.classList.remove("collapsed");
+                  button.textContent = "Hide";
                 }
-                const imgX = M + (leftW - imgW) / 2;
-                const imgY = y + (itemHeight - imgH) / 2;
-                doc.addImage(
-                  it.img,
-                  "JPEG",
-                  imgX,
-                  imgY,
-                  imgW,
-                  imgH,
-                  undefined,
-                  "FAST"
+              };
+
+              toggleSection1.addEventListener("click", () => {
+                const isHidden = section1Content.classList.toggle("collapsed");
+                uiState.section1_hidden = isHidden;
+                localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
+                toggleSection1.textContent = isHidden ? "Show" : "Hide";
+              });
+
+              toggleSection3.addEventListener("click", () => {
+                const isHidden = section3Content.classList.toggle("collapsed");
+                uiState.section3_hidden = isHidden;
+                localStorage.setItem(LS_KEYS.ui, JSON.stringify(uiState));
+                toggleSection3.textContent = isHidden ? "Show" : "Hide";
+              });
+
+              updateToggle(toggleSection1, section1Content, "section1_hidden");
+              updateToggle(toggleSection3, section3Content, "section3_hidden");
+            };
+            setupToggles();
+
+            // ===== DATA MANAGEMENT =====
+            const readEntries = () => {
+              try {
+                return JSON.parse(
+                  localStorage.getItem(LS_KEYS.entries) || "[]"
                 );
               } catch (e) {
-                console.error("Error processing image for PDF:", e);
-                doc.setFont("helvetica", "italic");
-                doc.setFontSize(10);
-                doc.text(
-                  "(gagal memuatkan gambar)",
-                  M + leftW / 2,
-                  y + itemHeight / 2,
-                  {
-                    align: "center",
-                  }
-                );
+                console.error("Error reading entries from localStorage:", e);
+                return [];
               }
-            } else {
-              doc.setFont("helvetica", "italic");
-              doc.setFontSize(10);
-              doc.text("(tiada gambar)", M + leftW / 2, y + itemHeight / 2, {
-                align: "center",
+            };
+            const writeEntries = (arr) =>
+              localStorage.setItem(LS_KEYS.entries, JSON.stringify(arr));
+            const loadForm = () => {
+              try {
+                const d = JSON.parse(
+                  localStorage.getItem(LS_KEYS.form) || "{}"
+                );
+                Object.keys(formEls).forEach((k) => {
+                  if (d[k] && formEls[k]) formEls[k].value = d[k];
+                });
+                if (formEls.tarikh && !formEls.tarikh.value)
+                  formEls.tarikh.value = todayISO();
+              } catch (e) {
+                console.error("Failed to load form data", e);
+              }
+            };
+            const saveForm = () => {
+              const d = {};
+              Object.keys(formEls).forEach((k) => {
+                if (formEls[k]) d[k] = formEls[k].value.trim();
               });
-            }
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(10);
-            doc.text("Ulasan:", rightX + 8, y + 14);
-            doc.setFont("helvetica", "normal");
-            const lines = (it.ulasan || "")
-              .split(/\n+/)
-              .map((t) => "• " + t.replace(/^•\s*/, ""));
-            const wrapped = doc.splitTextToSize(lines.join("\n"), rightW - 20);
-            doc.text(wrapped, rightX + 8, y + 28);
-            y += itemHeight + 22;
-          };
+              localStorage.setItem(LS_KEYS.form, JSON.stringify(d));
+            };
+            const formEls = {
+              namaProjek: $("namaProjek"),
+              perkara: $("perkara"),
+              tarikh: $("tarikh"),
+              namaBangunan: $("namaBangunan"),
+              email: $("email"),
+            };
+            Object.values(formEls).forEach((el) => {
+              if (el) el.addEventListener("input", saveForm);
+            });
 
-          let pageNo = 1;
-          drawWatermark();
-          drawHeader(pageNo, Math.ceil(items.length / ITEMS_PER_PAGE));
-          for (let i = 0; i < items.length; i++) {
-            await drawItem(items[i], i);
-            if ((i + 1) % ITEMS_PER_PAGE === 0 && i < items.length - 1) {
-              doc.addPage();
-              pageNo++;
+            // ===== IMAGE HANDLING (FIXED SIZE) =====
+            const fileToThumbDataURL = (file) =>
+              new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = addObjectURL(URL.createObjectURL(file));
+                img.onload = () => {
+                  URL.revokeObjectURL(url);
+                  const thumbW = 480;
+                  const ratio = img.naturalHeight / img.naturalWidth;
+                  const w = Math.min(thumbW, img.naturalWidth);
+                  const h = Math.round(w * ratio);
+                  const cv = document.createElement("canvas");
+                  cv.width = w;
+                  cv.height = h;
+                  const ctx = cv.getContext("2d", {
+                    willReadFrequently: false,
+                  });
+                  ctx.drawImage(img, 0, 0, w, h);
+                  try {
+                    resolve(cv.toDataURL("image/jpeg", 0.8));
+                  } catch (e) {
+                    reject(e);
+                  }
+                };
+                img.onerror = (e) => {
+                  URL.revokeObjectURL(url);
+                  reject(e);
+                };
+                img.src = url;
+              });
+            const getCachedImage = (file) => {
+              const key = `${file.name}_${file.size}_${file.lastModified}`;
+              return imageCache.get(key);
+            };
+            const setCachedImage = (file, dataUrl) => {
+              const key = `${file.name}_${file.size}_${file.lastModified}`;
+              if (imageCache.size >= MAX_CACHE_SIZE) {
+                const firstKey = imageCache.keys().next().value;
+                imageCache.delete(firstKey);
+              }
+              imageCache.set(key, dataUrl);
+            };
+            const onFilePicked = async (file) => {
+              if (!file) return;
+              showProcessing();
+              try {
+                let url = getCachedImage(file);
+                if (!url) {
+                  url = await fileToThumbDataURL(file);
+                  setCachedImage(file, url);
+                }
+                state.imgData = url;
+                const p = $("preview");
+                if (p) {
+                  p.src = state.imgData;
+                  p.style.display = "block";
+                }
+              } catch (e) {
+                console.error(e);
+                showToast("Gagal membaca gambar. Sila cuba lagi.");
+              } finally {
+                hideProcessing();
+              }
+            };
+            const btnKamera = $("btnKamera");
+            const btnGaleri = $("btnGaleri");
+            if (btnKamera)
+              btnKamera.addEventListener("click", () =>
+                $("fileCamera").click()
+              );
+            if (btnGaleri)
+              btnGaleri.addEventListener("click", () =>
+                $("fileGallery").click()
+              );
+            $("fileCamera").addEventListener("change", (e) =>
+              onFilePicked(e.target.files?.[0])
+            );
+            $("fileGallery").addEventListener("change", (e) =>
+              onFilePicked(e.target.files?.[0])
+            );
+
+            // ===== TABLE RENDERING (SECURE) WITH EDIT BUTTON =====
+            const refreshTable = () => {
+              const body = $("entriesBody");
+              if (!body) return;
+              const items = readEntries();
+              body.innerHTML = "";
+              if (items.length === 0) {
+                body.innerHTML =
+                  '<tr><td data-label="Data" class="tmuted" colspan="4">Tiada data.</td></tr>';
+                return;
+              }
+              items.forEach((it, idx) => {
+                const tr = document.createElement("tr");
+                const tdImg = document.createElement("td");
+                tdImg.dataset.label = "Gambar";
+                const tdLok = document.createElement("td");
+                tdLok.dataset.label = "Lokasi";
+                const tdUlas = document.createElement("td");
+                tdUlas.dataset.label = "Ulasan";
+                const tdAct = document.createElement("td");
+                tdAct.dataset.label = "Tindakan";
+
+                if (it.img) {
+                  const img = document.createElement("img");
+                  img.src = it.img;
+                  img.style.cssText =
+                    "max-width:100%; max-height:120px; border-radius:8px; cursor:pointer;";
+                  img.onclick = () => window.open(it.img, "_blank");
+                  tdImg.appendChild(img);
+                } else {
+                  tdImg.textContent = "(tiada)";
+                  tdImg.className = "tmuted";
+                }
+                tdLok.textContent = it.lokasi || "";
+                tdUlas.textContent = it.ulasan || "";
+
+                const actionContainer = document.createElement("div");
+                actionContainer.className = "action-buttons";
+
+                const editBtn = document.createElement("button"); // Changed to button for better semantics
+                editBtn.type = "button";
+                editBtn.className = "btn-ghost btn-edit";
+                editBtn.textContent = "✏️";
+                editBtn.ariaLabel = "Edit item";
+                editBtn.addEventListener("click", () => editItem(idx));
+
+                const delBtn = document.createElement("button"); // Changed to button
+                delBtn.type = "button";
+                delBtn.className = "btn-ghost btn-delete";
+                delBtn.textContent = "🗑️";
+                delBtn.ariaLabel = "Padam item";
+                delBtn.addEventListener("click", () => {
+                  if (confirm("Adakah anda pasti ingin memadam item ini?")) {
+                    const a = readEntries();
+                    a.splice(idx, 1);
+                    writeEntries(a);
+                    refreshTable();
+                    showToast("Item telah dipadam.");
+                  }
+                });
+
+                actionContainer.appendChild(editBtn);
+                actionContainer.appendChild(delBtn);
+                tdAct.appendChild(actionContainer);
+
+                tr.append(tdImg, tdLok, tdUlas, tdAct);
+                body.appendChild(tr);
+              });
+            };
+
+            const editItem = (idx) => {
+              const items = readEntries();
+              const itemToEdit = items[idx];
+              if (!itemToEdit) return;
+              $("lokasi").value = itemToEdit.lokasi || "";
+              $("ulasan").value = itemToEdit.ulasan || "";
+              state.imgData = itemToEdit.img || "";
+              const p = $("preview");
+              if (p) {
+                p.src = state.imgData;
+                p.style.display = state.imgData ? "block" : "none";
+              }
+              items.splice(idx, 1);
+              writeEntries(items);
+              refreshTable();
+              $("section2").scrollIntoView({ behavior: "smooth" });
+              showToast("Item dimuatkan untuk edit.");
+            };
+
+            const btnSimpanData = $("btnSimpanData");
+            if (btnSimpanData)
+              btnSimpanData.addEventListener("click", () => {
+                const lokasi = $("lokasi")?.value.trim() || "";
+                const ulasan = $("ulasan")?.value.trim() || "";
+                const img = state.imgData;
+                if (!lokasi && !ulasan && !img) {
+                  showToast("Tiada data untuk disimpan.");
+                  return;
+                }
+                const arr = readEntries();
+                arr.push({ lokasi, ulasan, img, ts: Date.now() });
+                writeEntries(arr);
+                refreshTable();
+                showToast("Item berjaya ditambah.");
+
+                // Hanya kosongkan gambar, bukan semua medan
+                state.imgData = "";
+                const previewEl = $("preview");
+                if (previewEl) previewEl.style.display = "none";
+                $("fileCamera").value = "";
+                $("fileGallery").value = "";
+              });
+            const clearItemForm = () => {
+              const lokasiEl = $("lokasi");
+              const ulasanEl = $("ulasan");
+              if (lokasiEl) lokasiEl.value = "";
+              if (ulasanEl) ulasanEl.value = "";
+              state.imgData = "";
+              const previewEl = $("preview");
+              if (previewEl) previewEl.style.display = "none";
+              $("fileCamera").value = "";
+              $("fileGallery").value = "";
+            };
+            const btnClear = $("btnClear");
+            if (btnClear) btnClear.addEventListener("click", clearItemForm);
+
+            // ===== PDF GENERATION (IMPROVED & ROBUST) =====
+            async function buildPDF() {
+              if (!window.jspdf || !window.jspdf.jsPDF) {
+                throw new Error("jsPDF library failed to load.");
+              }
+              const { jsPDF } = window.jspdf;
+              const doc = new jsPDF({
+                orientation: "p",
+                unit: "pt",
+                format: "a4",
+              });
+              const W = doc.internal.pageSize.getWidth();
+              const H = doc.internal.pageSize.getHeight();
+              const M = 36;
+              let y = M;
+              const ITEMS_PER_PAGE = 3;
+              const form = JSON.parse(
+                localStorage.getItem(LS_KEYS.form) || "{}"
+              );
+              const items = readEntries();
+              const quality = 0.5;
+
+              const drawWatermark = () => {
+                doc.saveGraphicsState();
+                doc.setGState(new doc.GState({ opacity: 0.06 }));
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(80);
+                doc.setTextColor(150);
+                doc.text("SYARIKAT XXX", W / 2, H / 2, {
+                  align: "center",
+                  angle: -30,
+                });
+                doc.restoreGraphicsState();
+              };
+
+              const drawHeader = (pageNo, totalPages) => {
+                y = M;
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(16);
+                doc.text("LAPORAN BERGAMBAR", W / 2, y, { align: "center" });
+                y += 20;
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(10);
+                doc.text(`Dijana: ${new Date().toLocaleString()}`, W / 2, y, {
+                  align: "center",
+                });
+                y += 16;
+                const info = [
+                  ["Nama Projek:", form.namaProjek || "-"],
+                  ["Perkara:", form.perkara || "-"],
+                  ["Tarikh:", form.tarikh || "-"],
+                  ["Nama Bangunan:", form.namaBangunan || "-"],
+                  ["Pelapor:", form.email || "-"],
+                ];
+                info.forEach(([label, value]) => {
+                  doc.setFont("helvetica", "bold");
+                  doc.text(label, M, y);
+                  doc.setFont("helvetica", "normal");
+                  doc.text(value, M + 110, y);
+                  y += 13;
+                });
+                y += 8;
+                doc.setDrawColor(120);
+                doc.setLineWidth(0.6);
+                doc.line(M, y, W - M, y);
+                y += 18;
+              };
+
+              const drawItem = async (it, idx) => {
+                const itemHeight = 180;
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(11);
+                doc.text(`${idx + 1}. Lokasi: ${it.lokasi || "-"}`, M, y);
+                y += 14;
+                const leftW = (W - M * 2) * 0.45;
+                const rightW = (W - M * 2) * 0.55;
+                const rightX = M + leftW + 10;
+                doc.setDrawColor(0);
+                doc.setLineWidth(0.8);
+                doc.rect(M, y, leftW, itemHeight);
+                doc.rect(rightX, y, rightW, itemHeight);
+
+                if (it.img) {
+                  try {
+                    // Use Promise.race to add a timeout and prevent hanging
+                    const dim = await Promise.race([
+                      new Promise((res, rej) => {
+                        const im = new Image();
+                        im.onload = () =>
+                          res({ w: im.naturalWidth, h: im.naturalHeight });
+                        im.onerror = () =>
+                          rej(new Error("Failed to load image data."));
+                        im.src = it.img;
+                      }),
+                      new Promise((_, rej) =>
+                        setTimeout(
+                          () => rej(new Error("Image loading timed out.")),
+                          5000
+                        )
+                      ), // 5 second timeout
+                    ]);
+
+                    const ratio = dim.h / dim.w;
+                    const maxW = leftW - 12;
+                    const maxH = itemHeight - 12;
+                    let imgW = maxW;
+                    let imgH = imgW * ratio;
+                    if (imgH > maxH) {
+                      imgH = maxH;
+                      imgW = imgH / ratio;
+                    }
+                    const imgX = M + (leftW - imgW) / 2;
+                    const imgY = y + (itemHeight - imgH) / 2;
+                    doc.addImage(
+                      it.img,
+                      "JPEG",
+                      imgX,
+                      imgY,
+                      imgW,
+                      imgH,
+                      undefined,
+                      "FAST"
+                    );
+                  } catch (e) {
+                    console.error("Error processing image for PDF:", e);
+                    doc.setFont("helvetica", "italic");
+                    doc.setFontSize(10);
+                    doc.text(
+                      "(gagal memuatkan gambar)",
+                      M + leftW / 2,
+                      y + itemHeight / 2,
+                      {
+                        align: "center",
+                      }
+                    );
+                  }
+                } else {
+                  doc.setFont("helvetica", "italic");
+                  doc.setFontSize(10);
+                  doc.text(
+                    "(tiada gambar)",
+                    M + leftW / 2,
+                    y + itemHeight / 2,
+                    {
+                      align: "center",
+                    }
+                  );
+                }
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                doc.text("Ulasan:", rightX + 8, y + 14);
+                doc.setFont("helvetica", "normal");
+                const lines = (it.ulasan || "")
+                  .split(/\n+/)
+                  .map((t) => "• " + t.replace(/^•\s*/, ""));
+                const wrapped = doc.splitTextToSize(
+                  lines.join("\n"),
+                  rightW - 20
+                );
+                doc.text(wrapped, rightX + 8, y + 28);
+                y += itemHeight + 22;
+              };
+
+              let pageNo = 1;
               drawWatermark();
               drawHeader(pageNo, Math.ceil(items.length / ITEMS_PER_PAGE));
+              for (let i = 0; i < items.length; i++) {
+                await drawItem(items[i], i);
+                if ((i + 1) % ITEMS_PER_PAGE === 0 && i < items.length - 1) {
+                  doc.addPage();
+                  pageNo++;
+                  drawWatermark();
+                  drawHeader(pageNo, Math.ceil(items.length / ITEMS_PER_PAGE));
+                }
+              }
+              const totalPages = doc.internal.getNumberOfPages();
+              for (let p = 1; p <= totalPages; p++) {
+                doc.setPage(p);
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(9);
+                doc.text(`${p}/${totalPages}`, W / 2, H - 20, {
+                  align: "center",
+                });
+              }
+              return doc;
             }
-          }
-          const totalPages = doc.internal.getNumberOfPages();
-          for (let p = 1; p <= totalPages; p++) {
-            doc.setPage(p);
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9);
-            doc.text(`${p}/${totalPages}`, W / 2, H - 20, { align: "center" });
-          }
-          return doc;
-        }
 
-        // ===== FINAL ACTIONS (UPDATED FILENAMES) =====
-        const savePDFLocal = async () => {
-          const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-          const fname = `${(form.namaProjek || "projek").replace(
-            /\s+/g,
-            "_"
-          )}_${todayISO()}.pdf`;
-          try {
-            showProcessing();
-            const doc = await buildPDF();
-            const blob = doc.output("blob");
-            const url = URL.createObjectURL(blob); // No need to track this for cleanup
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = fname;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url); // Clean up immediately
-            showToast("PDF berjaya dimuat turun.");
-          } catch (e) {
-            console.error("Failed to save PDF:", e);
-            showToast(`Gagal menjana PDF: ${e.message}`);
-          } finally {
-            hideProcessing();
-          }
-        };
+            // ===== FINAL ACTIONS (UPDATED FILENAMES) =====
+            const savePDFLocal = async () => {
+              const form = JSON.parse(
+                localStorage.getItem(LS_KEYS.form) || "{}"
+              );
+              const fname = `${(form.namaProjek || "projek").replace(
+                /\s+/g,
+                "_"
+              )}_${todayISO()}.pdf`;
+              try {
+                showProcessing();
+                const doc = await buildPDF();
+                const blob = doc.output("blob");
+                const url = URL.createObjectURL(blob); // No need to track this for cleanup
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = fname;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url); // Clean up immediately
+                showToast("PDF berjaya dimuat turun.");
+              } catch (e) {
+                console.error("Failed to save PDF:", e);
+                showToast(`Gagal menjana PDF: ${e.message}`);
+              } finally {
+                hideProcessing();
+              }
+            };
 
-        const submitAndClear = async () => {
-          const required = ["namaProjek", "perkara", "tarikh", "email"];
-          for (const k of required) {
-            if (!formEls[k]?.value.trim()) {
-              showToast(`Sila lengkapkan medan: ${k}`, 4000);
-              formEls[k]?.focus();
-              return;
-            }
-          }
-          if (readEntries().length === 0) {
-            showToast("Sila tambah sekurang-kurangnya satu item.", 4000);
-            return;
-          }
-          await savePDFLocal();
-          if (
-            confirm(
-              "Adakah anda pasti ingin mengosongkan semua data selepas memuat turun PDF?"
-            )
-          ) {
-            localStorage.removeItem(LS_KEYS.entries);
-            localStorage.removeItem(LS_KEYS.form);
+            const submitAndClear = async () => {
+              const required = ["namaProjek", "perkara", "tarikh", "email"];
+              for (const k of required) {
+                if (!formEls[k]?.value.trim()) {
+                  showToast(`Sila lengkapkan medan: ${k}`, 4000);
+                  formEls[k]?.focus();
+                  return;
+                }
+              }
+              if (readEntries().length === 0) {
+                showToast("Sila tambah sekurang-kurangnya satu item.", 4000);
+                return;
+              }
+              await savePDFLocal();
+              if (
+                confirm(
+                  "Adakah anda pasti ingin mengosongkan semua data selepas memuat turun PDF?"
+                )
+              ) {
+                localStorage.removeItem(LS_KEYS.entries);
+                localStorage.removeItem(LS_KEYS.form);
+                refreshTable();
+                clearItemForm();
+                Object.values(formEls).forEach((el) => {
+                  if (el) el.value = "";
+                });
+                showToast("Semua data telah dibersihkan.");
+              }
+            };
+
+            // ===== EVENT LISTENERS FOR FINAL ACTIONS =====
+            const btnSavePDFLocal = $("btnSavePDFLocal");
+            if (btnSavePDFLocal)
+              btnSavePDFLocal.addEventListener("click", savePDFLocal);
+            const btnSubmit = $("btnSubmit");
+            if (btnSubmit) btnSubmit.addEventListener("click", submitAndClear);
+
+            // ===== INITIALIZATION & MOBILE VIEWPORT FIX =====
+            loadForm();
             refreshTable();
-            clearItemForm();
-            Object.values(formEls).forEach((el) => {
-              if (el) el.value = "";
-            });
-            showToast("Semua data telah dibersihkan.");
-          }
-        };
-
-        // ===== EVENT LISTENERS FOR FINAL ACTIONS =====
-        const btnSavePDFLocal = $("btnSavePDFLocal");
-        if (btnSavePDFLocal)
-          btnSavePDFLocal.addEventListener("click", savePDFLocal);
-        const btnSubmit = $("btnSubmit");
-        if (btnSubmit) btnSubmit.addEventListener("click", submitAndClear);
-
-        // ===== INITIALIZATION & MOBILE VIEWPORT FIX =====
-        loadForm();
-        refreshTable();
-        (function () {
-          const vp = document.querySelector('meta[name="viewport"]');
-          const lock = () => {
-            if (vp)
-              vp.setAttribute(
-                "content",
-                "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-              );
-          };
-          const unlock = () => {
-            if (vp)
-              vp.setAttribute(
-                "content",
-                "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"
-              );
-          };
-          document.addEventListener("focusin", (e) => {
-            if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) lock();
+            (function () {
+              const vp = document.querySelector('meta[name="viewport"]');
+              const lock = () => {
+                if (vp)
+                  vp.setAttribute(
+                    "content",
+                    "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+                  );
+              };
+              const unlock = () => {
+                if (vp)
+                  vp.setAttribute(
+                    "content",
+                    "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"
+                  );
+              };
+              document.addEventListener("focusin", (e) => {
+                if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) lock();
+              });
+              document.addEventListener("focusout", (e) => {
+                if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) unlock();
+              });
+            })();
           });
-          document.addEventListener("focusout", (e) => {
-            if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) unlock();
-          });
-        })();
-      });
-    </script>
+        </script>
+      </body>
+    </html>
   </body>
 </html>
