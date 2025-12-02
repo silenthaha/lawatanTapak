@@ -576,7 +576,7 @@
         const MAX_CACHE_SIZE = 20;
 
         // ===== UI HELPERS =====
-        const showToast = (msg, duration = 2000) => {
+        const showToast = (msg, duration = 3000) => {
           const t = $("toast");
           if (t) {
             t.innerHTML = msg;
@@ -645,6 +645,7 @@
           try {
             return JSON.parse(localStorage.getItem(LS_KEYS.entries) || "[]");
           } catch (e) {
+            console.error("Error reading entries from localStorage:", e);
             return [];
           }
         };
@@ -687,7 +688,7 @@
             const url = addObjectURL(URL.createObjectURL(file));
             img.onload = () => {
               URL.revokeObjectURL(url);
-              const thumbW = 480; // FIXED: Medium size (as requested)
+              const thumbW = 480;
               const ratio = img.naturalHeight / img.naturalWidth;
               const w = Math.min(thumbW, img.naturalWidth);
               const h = Math.round(w * ratio);
@@ -737,7 +738,7 @@
             }
           } catch (e) {
             console.error(e);
-            showToast("Gagal membaca gambar.");
+            showToast("Gagal membaca gambar. Sila cuba lagi.");
           } finally {
             hideProcessing();
           }
@@ -794,13 +795,15 @@
             const actionContainer = document.createElement("div");
             actionContainer.className = "action-buttons";
 
-            const editBtn = document.createElement("td");
+            const editBtn = document.createElement("button"); // Changed to button for better semantics
+            editBtn.type = "button";
             editBtn.className = "btn-ghost btn-edit";
             editBtn.textContent = "✏️";
             editBtn.ariaLabel = "Edit item";
             editBtn.addEventListener("click", () => editItem(idx));
 
-            const delBtn = document.createElement("td");
+            const delBtn = document.createElement("button"); // Changed to button
+            delBtn.type = "button";
             delBtn.className = "btn-ghost btn-delete";
             delBtn.textContent = "🗑️";
             delBtn.ariaLabel = "Padam item";
@@ -865,14 +868,25 @@
             $("fileCamera").value = "";
             $("fileGallery").value = "";
           });
-
+        const clearItemForm = () => {
+          const lokasiEl = $("lokasi");
+          const ulasanEl = $("ulasan");
+          if (lokasiEl) lokasiEl.value = "";
+          if (ulasanEl) ulasanEl.value = "";
+          state.imgData = "";
+          const previewEl = $("preview");
+          if (previewEl) previewEl.style.display = "none";
+          $("fileCamera").value = "";
+          $("fileGallery").value = "";
+        };
         const btnClear = $("btnClear");
         if (btnClear) btnClear.addEventListener("click", clearItemForm);
 
-        // ===== PDF GENERATION (FIXED QUALITY) =====
+        // ===== PDF GENERATION (IMPROVED & ROBUST) =====
         async function buildPDF() {
-          if (!window.jspdf || !window.jspdf.jsPDF)
-            throw new Error("jsPDF tidak dimuatkan");
+          if (!window.jspdf || !window.jspdf.jsPDF) {
+            throw new Error("jsPDF library failed to load.");
+          }
           const { jsPDF } = window.jspdf;
           const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
           const W = doc.internal.pageSize.getWidth();
@@ -882,7 +896,8 @@
           const ITEMS_PER_PAGE = 3;
           const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
           const items = readEntries();
-          const quality = 0.5; // FIXED: Low quality
+          const quality = 0.5;
+
           const drawWatermark = () => {
             doc.saveGraphicsState();
             doc.setGState(new doc.GState({ opacity: 0.06 }));
@@ -895,6 +910,7 @@
             });
             doc.restoreGraphicsState();
           };
+
           const drawHeader = (pageNo, totalPages) => {
             y = M;
             doc.setFont("helvetica", "bold");
@@ -927,6 +943,7 @@
             doc.line(M, y, W - M, y);
             y += 18;
           };
+
           const drawItem = async (it, idx) => {
             const itemHeight = 180;
             doc.setFont("helvetica", "bold");
@@ -940,15 +957,27 @@
             doc.setLineWidth(0.8);
             doc.rect(M, y, leftW, itemHeight);
             doc.rect(rightX, y, rightW, itemHeight);
+
             if (it.img) {
               try {
-                const dim = await new Promise((res) => {
-                  const im = new Image();
-                  im.onload = () =>
-                    res({ w: im.naturalWidth, h: im.naturalHeight });
-                  im.onerror = () => res({ w: 2, h: 1 });
-                  im.src = it.img;
-                });
+                // Use Promise.race to add a timeout and prevent hanging
+                const dim = await Promise.race([
+                  new Promise((res, rej) => {
+                    const im = new Image();
+                    im.onload = () =>
+                      res({ w: im.naturalWidth, h: im.naturalHeight });
+                    im.onerror = () =>
+                      rej(new Error("Failed to load image data."));
+                    im.src = it.img;
+                  }),
+                  new Promise((_, rej) =>
+                    setTimeout(
+                      () => rej(new Error("Image loading timed out.")),
+                      5000
+                    )
+                  ), // 5 second timeout
+                ]);
+
                 const ratio = dim.h / dim.w;
                 const maxW = leftW - 12;
                 const maxH = itemHeight - 12;
@@ -960,15 +989,27 @@
                 }
                 const imgX = M + (leftW - imgW) / 2;
                 const imgY = y + (itemHeight - imgH) / 2;
-                doc.addImage(it.img, "JPEG", imgX, imgY, imgW, imgH);
-              } catch {
+                doc.addImage(
+                  it.img,
+                  "JPEG",
+                  imgX,
+                  imgY,
+                  imgW,
+                  imgH,
+                  undefined,
+                  "FAST"
+                );
+              } catch (e) {
+                console.error("Error processing image for PDF:", e);
                 doc.setFont("helvetica", "italic");
                 doc.setFontSize(10);
                 doc.text(
                   "(gagal memuatkan gambar)",
                   M + leftW / 2,
                   y + itemHeight / 2,
-                  { align: "center" }
+                  {
+                    align: "center",
+                  }
                 );
               }
             } else {
@@ -989,6 +1030,7 @@
             doc.text(wrapped, rightX + 8, y + 28);
             y += itemHeight + 22;
           };
+
           let pageNo = 1;
           drawWatermark();
           drawHeader(pageNo, Math.ceil(items.length / ITEMS_PER_PAGE));
@@ -1017,76 +1059,39 @@
           const fname = `${(form.namaProjek || "projek").replace(
             /\s+/g,
             "_"
-          )}_${todayISO()}.pdf`; // Renamed
+          )}_${todayISO()}.pdf`;
           try {
             showProcessing();
             const doc = await buildPDF();
             const blob = doc.output("blob");
-            const url = addObjectURL(URL.createObjectURL(blob));
+            const url = URL.createObjectURL(blob); // No need to track this for cleanup
             const a = document.createElement("a");
             a.href = url;
             a.download = fname;
             document.body.appendChild(a);
             a.click();
             a.remove();
+            URL.revokeObjectURL(url); // Clean up immediately
             showToast("PDF berjaya dimuat turun.");
           } catch (e) {
-            console.error(e);
-            showToast("Gagal menjana PDF.");
+            console.error("Failed to save PDF:", e);
+            showToast(`Gagal menjana PDF: ${e.message}`);
           } finally {
             hideProcessing();
           }
         };
-        const exportData = () => {
-          const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
-          const fname = `Data_${(form.namaProjek || "projek").replace(
-            /\s+/g,
-            "_"
-          )}_${todayISO()}.json`; // Renamed
-          const data = { form, entries: readEntries(), version: "v6" };
-          const blob = new Blob([JSON.stringify(data, null, 2)], {
-            type: "application/json",
-          });
-          const url = addObjectURL(URL.createObjectURL(blob));
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fname;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          showToast("Data berjaya dieksport.");
-        };
-        const importData = (file) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            try {
-              const data = JSON.parse(e.target.result);
-              if (data.form) {
-                localStorage.setItem(LS_KEYS.form, JSON.stringify(data.form));
-                loadForm();
-              }
-              if (data.entries) {
-                writeEntries(data.entries);
-                refreshTable();
-              }
-              showToast("Data berjaya diimport.");
-            } catch (error) {
-              console.error(error);
-              showToast("Gagal mengimport data. Fail mungkin rosak.");
-            }
-          };
-          reader.readAsText(file);
-        };
+
         const submitAndClear = async () => {
           const required = ["namaProjek", "perkara", "tarikh", "email"];
           for (const k of required) {
             if (!formEls[k]?.value.trim()) {
-              alert("Sila lengkapkan semua medan wajib di Bahagian 1.");
+              showToast(`Sila lengkapkan medan: ${k}`, 4000);
+              formEls[k]?.focus();
               return;
             }
           }
           if (readEntries().length === 0) {
-            alert("Sila tambah sekurang-kurangnya satu item.");
+            showToast("Sila tambah sekurang-kurangnya satu item.", 4000);
             return;
           }
           await savePDFLocal();
@@ -1112,13 +1117,6 @@
           btnSavePDFLocal.addEventListener("click", savePDFLocal);
         const btnSubmit = $("btnSubmit");
         if (btnSubmit) btnSubmit.addEventListener("click", submitAndClear);
-        const btnExportData = $("btnExportData");
-        if (btnExportData) btnExportData.addEventListener("click", exportData);
-        const btnImportData = $("btnImportData");
-        if (btnImportData)
-          btnImportData.addEventListener("change", (e) =>
-            importData(e.target.files[0])
-          );
 
         // ===== INITIALIZATION & MOBILE VIEWPORT FIX =====
         loadForm();
