@@ -46,11 +46,11 @@
         padding: 16px;
       }
       h1 {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
         margin: 0 0 8px;
       }
       h2 {
-        font-size: 1.1rem;
+        font-size: 0.9rem;
         margin: 0 0 12px;
       }
       .subtitle {
@@ -90,26 +90,21 @@
       #entriesTable th,
       #entriesTable td {
         border-bottom: 1px solid var(--border);
-        padding: 12px 10px;
+        padding: 10px;
         vertical-align: top;
         white-space: pre-wrap;
         word-break: break-word;
         overflow-wrap: break-word;
+        hyphens: auto;
       }
       #entriesTable th {
         background: #0f1a31;
         position: sticky;
         top: 0;
-        z-index: 2;
       }
-      #entriesTable td:nth-child(1) {
-        width: 25%;
-      }
-      #entriesTable td:nth-child(2) {
-        width: 20%;
-      }
+
       #entriesTable td:nth-child(3) {
-        width: 35%;
+        width: 45%;
       }
       #entriesTable td:nth-child(4) {
         width: 20%;
@@ -118,32 +113,14 @@
       }
 
       @media (max-width: 560px) {
-        #entriesTable thead {
+        .table thead {
           display: none;
         }
         #entriesTable,
         #entriesTable tbody,
         #entriesTable tr,
         #entriesTable td {
-          display: block;
-          width: 100% !important;
-        }
-        #entriesTable tr {
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          padding: 10px;
-          margin-bottom: 12px;
-        }
-        #entriesTable td {
-          border: none;
-          padding: 5px 0;
-        }
-        #entriesTable td:before {
-          content: attr(data-label) ": ";
-          font-weight: 600;
-          color: var(--muted);
-          display: inline-block;
-          width: 80px;
+          font-size: clamp(12px, 2.5vw, 14px);
         }
       }
 
@@ -158,13 +135,14 @@
         justify-content: center;
         align-items: center;
         background: transparent;
+        width: 0px;
+        height: 0px;
         border: none;
-        color: var(--muted);
-        font-size: 1.2rem;
+        background: transparent;
+        font-size: 0.8rem;
         cursor: pointer;
-        padding: 5px;
-        border-radius: 6px;
-        transition: all 0.2s ease-in-out;
+        padding: 0px;
+        margin: 0 auto;
       }
       .btn-delete:hover {
         color: var(--danger);
@@ -173,6 +151,12 @@
       .btn-edit:hover {
         color: var(--accent);
         background: rgba(79, 140, 255, 0.12);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        font-size: 0.8rem;
+        padding: 6px 10px;
       }
 
       label {
@@ -187,15 +171,15 @@
       }
       .input-wrap button.clear-btn {
         position: absolute;
-        right: 8px;
+        right: 1px;
         top: 50%;
         transform: translateY(-50%);
         background: transparent;
         border: none;
         color: var(--muted);
-        font-size: 1.2rem;
+        font-size: 1rem;
         cursor: pointer;
-        padding: 5px;
+        width: 50px;
       }
       input,
       textarea,
@@ -218,8 +202,6 @@
       }
       input[type="date"] {
         padding: 10px 12px;
-        text-align: left; /* untuk adjust di iphone */
-        -webkit-appearance: none;
       }
       input[type="date"]::-webkit-calendar-picker-indicator {
         opacity: 0;
@@ -258,15 +240,16 @@
         border: 1px solid var(--border);
         background: #0f1a31;
         color: var(--text);
-        padding: 10px 14px;
+        padding: 5px 5px;
         border-radius: 12px;
-        font-size: 14px;
-        font-weight: 500;
+        font-size: 12px;
+        font-weight: 400;
         cursor: pointer;
         transition: all 0.2s ease-in-out;
         text-shadow: 0px 1px 0px #283966;
         flex-grow: 1;
-        min-width: 130px;
+        width: 130px;
+        height: 40px;
       }
       button:hover {
         background: #1a2338;
@@ -281,11 +264,13 @@
         background: var(--ok);
         border-color: var(--ok);
         color: #fff;
+        padding-top: 10px;
+        padding-bottom: 10px;
       }
       button.warn {
         background: var(--warn);
         border-color: var(--warn);
-        color: #000;
+        color: #fff;
       }
       button.danger {
         background: var(--danger);
@@ -347,20 +332,24 @@
       }
       .section-title {
         margin: 0;
+        width: 500px;
       }
       .toggle-btn {
         background: transparent;
         border: 1px solid var(--border);
         color: var(--muted);
-        padding: 6px 10px;
+        display: inline-block;
         border-radius: 20px;
         font-size: 12px;
         cursor: pointer;
         transition: all 0.2s;
         display: flex;
+        justify-content: center;
         align-items: center;
-        gap: 5px;
-        margin-left: 10px;
+        font-weight: 500;
+        text-align: center;
+        padding: 10px 20px;
+        height: 10px;
       }
       .toggle-btn:hover {
         color: var(--text);
@@ -395,17 +384,13 @@
   <body>
     <div class="wrap">
       <h1>📋 Laporan Bergambar</h1>
-      <div class="subtitle">
-        Borang mudah alih untuk laporan lawatan tapak. Data disimpan secara
-        tempatan.
-      </div>
+      <div class="subtitle"></div>
 
+      <!-- Section 1 -->
       <div class="card" id="section1">
         <div class="section-header">
           <h2 class="section-title">Maklumat Asas</h2>
-          <button id="toggleSection1" class="toggle-btn">
-            <span class="icon">▼</span>
-          </button>
+          <button id="toggleSection1" class="toggle-btn">Hide</button>
         </div>
         <div class="section-content" id="section1Content">
           <div class="row cols-2">
@@ -413,7 +398,7 @@
               <label for="namaProjek">Nama Projek *</label
               ><input
                 id="namaProjek"
-                placeholder="Masukkan nama projek"
+                placeholder=""
                 required
                 aria-required="true"
               />
@@ -422,7 +407,7 @@
               <label for="perkara">Perkara *</label
               ><input
                 id="perkara"
-                placeholder="Contoh: Pemeriksaan Mekanikal"
+                placeholder=""
                 required
                 aria-required="true"
               />
@@ -434,15 +419,15 @@
               </div>
             </div>
             <div>
-              <label for="namaBangunan">Nama Bangunan</label
-              ><input id="namaBangunan" placeholder="Masukkan nama bangunan" />
+              <label for="namaBangunan">Nama Bangunan</label>
+              <input id="namaBangunan" placeholder="" />
             </div>
             <div>
               <label for="email">Nama Pelapor *</label
               ><input
                 id="email"
                 type="email"
-                placeholder="nama@email.com"
+                placeholder=""
                 required
                 aria-required="true"
               />
@@ -458,7 +443,7 @@
           <div>
             <label for="lokasi">Nama bilik / lokasi</label>
             <div class="input-wrap">
-              <input id="lokasi" placeholder="Contoh: Bilik Server 1" /><button
+              <input id="lokasi" placeholder="" /><button
                 type="button"
                 class="clear-btn"
                 onclick="document.getElementById('lokasi').value=''"
@@ -520,17 +505,15 @@
           </div>
         </div>
         <div class="btnbar">
-          <button class="ok" id="btnSimpanData">➕ Simpan Item</button
-          ><button class="warn" id="btnClear">🔄 Set Semula</button>
+          <button class="ok" id="btnSimpanData">Simpan Item</button
+          ><button class="warn" id="btnClear">Set Semula</button>
         </div>
       </div>
 
       <div class="card" id="section3">
         <div class="section-header">
           <h2 class="section-title">Senarai Rekod</h2>
-          <button id="toggleSection3" class="toggle-btn">
-            <span class="icon">▼</span>
-          </button>
+          <button id="toggleSection3" class="toggle-btn">Hide</button>
         </div>
         <div class="section-content" id="section3Content">
           <table class="table" id="entriesTable">
@@ -539,7 +522,7 @@
                 <th style="width: 25%">Gambar</th>
                 <th style="width: 20%">Lokasi</th>
                 <th style="width: 35%">Ulasan</th>
-                <th style="width: 20%">Tindakan</th>
+                <th style="width: 20%"></th>
               </tr>
             </thead>
             <tbody id="entriesBody">
@@ -553,26 +536,17 @@
         </div>
       </div>
 
-      <div class="card" id="section4">
-        <h2>Tindakan Akhir</h2>
+      <div
+        class="card"
+        id="section4"
+        style="padding-bottom: 10px; padding-top: 10px"
+      >
+        <!-- <h2>Tindakan Akhir</h2> -->
         <div class="btnbar">
-          <button id="btnExportData" class="warn">💾 Eksport Data</button
-          ><label
-            for="btnImportData"
-            class="btn warn"
-            style="text-align: center"
-            >📂 Import Data</label
-          ><input id="btnImportData" type="file" accept=".json" hidden />
+          <button id="btnSavePDFLocal" class="ok">Muat Turun PDF</button
+          ><button id="btnSubmit" class="danger">Hantar & Kosongkan</button>
         </div>
-        <div class="btnbar">
-          <button id="btnSavePDFLocal" class="ok">📄 Muat Turun PDF</button
-          ><button id="btnSubmit" class="danger">📤 Hantar & Kosongkan</button>
-        </div>
-        <div class="note">
-          "Muat Turun PDF" akan menjana fail PDF untuk disimpan. "Hantar &
-          Kosongkan" akan memuat turun PDF dan kemudian membersihkan semua data
-          daripada peranti.
-        </div>
+        <div class="note"></div>
       </div>
     </div>
 
@@ -627,17 +601,6 @@
           objectURLs.length = 0;
         };
         window.addEventListener("beforeunload", cleanupAllObjectURLs);
-
-        const input = document.getElementById("tarikh");
-
-        input.addEventListener("change", () => {
-          const d = new Date(input.value);
-          const day = String(d.getDate()).padStart(2, "0");
-          const month = String(d.getMonth() + 1).padStart(2, "0");
-          const year = d.getFullYear();
-
-          document.getElementById("tarikh").value = `${day}/${month}/${year}`;
-        });
 
         // ===== TOGGLE FUNCTIONALITY =====
         const setupToggles = () => {
@@ -832,14 +795,14 @@
             const actionContainer = document.createElement("div");
             actionContainer.className = "action-buttons";
 
-            const editBtn = document.createElement("button");
+            const editBtn = document.createElement("button"); // Changed to button for better semantics
             editBtn.type = "button";
             editBtn.className = "btn-ghost btn-edit";
             editBtn.textContent = "✏️";
             editBtn.ariaLabel = "Edit item";
             editBtn.addEventListener("click", () => editItem(idx));
 
-            const delBtn = document.createElement("button");
+            const delBtn = document.createElement("button"); // Changed to button
             delBtn.type = "button";
             delBtn.className = "btn-ghost btn-delete";
             delBtn.textContent = "🗑️";
@@ -960,15 +923,10 @@
               align: "center",
             });
             y += 16;
-            const formatTarikh = (t) => {
-              if (!t) return "-"; //kalau kosong
-              const [y, m, d] = t.split("-");
-              return `${d}/${m}/${y}`;
-            };
             const info = [
               ["Nama Projek:", form.namaProjek || "-"],
               ["Perkara:", form.perkara || "-"],
-              ["Tarikh:", formatTarikh(form.tarikh) || "-"],
+              ["Tarikh:", form.tarikh || "-"],
               ["Nama Bangunan:", form.namaBangunan || "-"],
               ["Pelapor:", form.email || "-"],
             ];
@@ -1002,6 +960,7 @@
 
             if (it.img) {
               try {
+                // Use Promise.race to add a timeout and prevent hanging
                 const dim = await Promise.race([
                   new Promise((res, rej) => {
                     const im = new Image();
@@ -1016,7 +975,7 @@
                       () => rej(new Error("Image loading timed out.")),
                       5000
                     )
-                  ),
+                  ), // 5 second timeout
                 ]);
 
                 const ratio = dim.h / dim.w;
@@ -1094,29 +1053,8 @@
           return doc;
         }
 
-        // ===== VALIDATION HELPER =====
-        const validateBasicInfo = () => {
-          const requiredFields = {
-            "Nama Projek": formEls.namaProjek,
-            Perkara: formEls.perkara,
-            Tarikh: formEls.tarikh,
-            "Nama Pelapor": formEls.email,
-          };
-          for (const [label, el] of Object.entries(requiredFields)) {
-            if (!el || !el.value.trim()) {
-              showToast("Sila lengkapkan Maklumat Asas", 4000);
-              el?.focus();
-              return false;
-            }
-          }
-          return true;
-        };
-
         // ===== FINAL ACTIONS (UPDATED FILENAMES) =====
         const savePDFLocal = async () => {
-          if (!validateBasicInfo()) {
-            return;
-          }
           const form = JSON.parse(localStorage.getItem(LS_KEYS.form) || "{}");
           const fname = `${(form.namaProjek || "projek").replace(
             /\s+/g,
@@ -1126,14 +1064,14 @@
             showProcessing();
             const doc = await buildPDF();
             const blob = doc.output("blob");
-            const url = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob); // No need to track this for cleanup
             const a = document.createElement("a");
             a.href = url;
             a.download = fname;
             document.body.appendChild(a);
             a.click();
             a.remove();
-            URL.revokeObjectURL(url);
+            URL.revokeObjectURL(url); // Clean up immediately
             showToast("PDF berjaya dimuat turun.");
           } catch (e) {
             console.error("Failed to save PDF:", e);
@@ -1144,8 +1082,13 @@
         };
 
         const submitAndClear = async () => {
-          if (!validateBasicInfo()) {
-            return;
+          const required = ["namaProjek", "perkara", "tarikh", "email"];
+          for (const k of required) {
+            if (!formEls[k]?.value.trim()) {
+              showToast(`Sila lengkapkan medan: ${k}`, 4000);
+              formEls[k]?.focus();
+              return;
+            }
           }
           if (readEntries().length === 0) {
             showToast("Sila tambah sekurang-kurangnya satu item.", 4000);
